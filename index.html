@@ -23,7 +23,7 @@
 
     <header class="mb-4 text-center">
         <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500">simulator8</h1>
-        <p class="text-[10px] text-gray-400">v3.3 記録機能復元版</p>
+        <p class="text-[10px] text-gray-400">v3.4 記録機能・完全修正版</p>
     </header>
 
     <div class="input-card p-3 rounded-xl shadow-lg mb-4 space-y-3">
@@ -109,7 +109,7 @@
                 <label class="text-xs font-bold text-indigo-200 text-[10px]">毎年引き出す割合 (%)</label>
                 <input type="number" id="num_withdrawRate" value="4.0" step="0.1" oninput="syncRange('withdrawRateRange', this.value)" class="num-input">
             </div>
-            <input type="range" id="withdrawRateRange" min="0" max="10" step="0.1" value="4.0" oninput="syncNum('num_withdrawRate', this.value)">
+            <input type="range" id="withdrawRateRange" min="0" max="10" step="0.1" value="4.0" class="w-full" oninput="syncNum('num_withdrawRate', this.value)">
         </div>
 
         <div id="inputAmountArea" class="hidden bg-indigo-900/20 rounded-xl p-3 border border-indigo-500/30">
@@ -117,7 +117,7 @@
                 <label class="text-xs font-bold text-indigo-200 text-[10px]">毎月引き出す金額 (万)</label>
                 <input type="number" id="num_withdrawAmt" value="20" oninput="syncRange('withdrawAmountRange', this.value)" class="num-input">
             </div>
-            <input type="range" id="withdrawAmountRange" min="0" max="100" step="1" value="20" oninput="syncNum('num_withdrawAmt', this.value)">
+            <input type="range" id="withdrawAmountRange" min="0" max="100" step="1" value="20" class="w-full" oninput="syncNum('num_withdrawAmt', this.value)">
         </div>
     </div>
 
@@ -132,8 +132,8 @@
     <div class="bg-white/5 p-2 rounded-xl border border-white/10 mb-4 relative h-[300px]"><canvas id="chartCanvas"></canvas></div>
 
     <div class="space-y-2 mb-8">
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg hover:opacity-90 transition transform active:scale-95 border border-blue-400/30"><span class="font-bold text-xs">SBI証券 口座開設はこちら（PR）</span></a>
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg hover:opacity-90 transition transform active:scale-95 border border-emerald-400/30"><span class="font-bold text-xs">三井住友カード（NL）を作る（PR）</span></a>
+        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口座開設はこちら（PR）</a>
+        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg border border-emerald-400/30 font-bold text-xs">三井住友カード（NL）を作る（PR）</a>
     </div>
 
     <footer class="text-center text-[10px] text-gray-500 border-t border-slate-800 pt-4 pb-20">
@@ -164,7 +164,7 @@
         window.onload = () => {
             renderSliders('current');
             renderSliders('future');
-            loadState(); // 記録から復元
+            loadState(); // ここで読み込み
             calculate();
         };
 
@@ -192,14 +192,15 @@
                 </div>`).join('');
         }
 
-        function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); }
+        // 数値同期と同時に保存を走らせる
+        function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); saveState(); }
         function syncRange(rangeId, val) { 
             const clamped = Math.max(0, Math.min(100, val));
             document.getElementById(rangeId).value = clamped; 
             calculate(); 
+            saveState();
         }
 
-        // 保存機能
         function saveState() {
             const state = {
                 currentAge: document.getElementById('currentAge').value,
@@ -219,12 +220,11 @@
                 state.portfolio[`current_${a.key}`] = document.getElementById(`range_current_${a.key}`).value;
                 state.portfolio[`future_${a.key}`] = document.getElementById(`range_future_${a.key}`).value;
             });
-            localStorage.setItem('simulatorState', JSON.stringify(state));
+            localStorage.setItem('simulatorState8', JSON.stringify(state));
         }
 
-        // 読み込み機能
         function loadState() {
-            const saved = localStorage.getItem('simulatorState');
+            const saved = localStorage.getItem('simulatorState8');
             if (!saved) return;
             const state = JSON.parse(saved);
             Object.keys(state).forEach(key => {
@@ -244,7 +244,7 @@
             });
         }
 
-        function rerollCrash() { memoCrashYears = []; calculate(); }
+        function rerollCrash() { memoCrashYears = []; calculate(); saveState(); }
 
         function applyPreset(type) {
             let config = {};
@@ -262,6 +262,7 @@
                 }
             });
             calculate();
+            saveState();
         }
 
         function updateTotalBar() {
@@ -273,7 +274,6 @@
 
         function calculate() {
             updateTotalBar();
-            saveState(); // 変更のたびに記録
             const age = Number(document.getElementById('currentAge').value) || 35;
             const init = (Number(document.getElementById('initialAsset').value) || 0) * 10000;
             const monthly = (Number(document.getElementById('monthlyAdd').value) || 0) * 10000;
