@@ -22,7 +22,7 @@
 
     <header class="mb-4 text-center">
         <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500">simulator8</h1>
-        <p class="text-[10px] text-gray-400 font-bold">v3.6 保存規格統一版</p>
+        <p class="text-[10px] text-gray-400 font-bold">v3.7 記録機能・完全再構築</p>
     </header>
 
     <div class="input-card p-3 rounded-xl shadow-lg mb-4 space-y-3">
@@ -111,7 +111,7 @@
     <div class="bg-white/5 p-2 rounded-xl border border-white/10 mb-4 relative h-[300px]"><canvas id="chartCanvas"></canvas></div>
 
     <div class="space-y-2 mb-8">
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口開はこちら（PR）</a>
+        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口座開設はこちら（PR）</a>
         <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg border border-emerald-400/30 font-bold text-xs">三井住友カード（NL）を作る（PR）</a>
     </div>
 
@@ -123,7 +123,7 @@
     <div class="sticky-result"><div class="max-w-md mx-auto grid grid-cols-2 gap-4 text-center"><div><p class="text-[9px] text-gray-400 font-bold">資産ピーク</p><p class="text-lg font-bold text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs">万</span></p></div><div><p class="text-[9px] text-gray-400 font-bold">100歳時点</p><p class="text-sm font-bold text-white"><span id="resEndAsset">0</span><span class="text-xs">万</span></p></div></div></div>
 
     <script>
-        const STORAGE_KEY = 'simulatorState_v1';
+        const STORAGE_KEY = 'simulatorState_v37';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', desc: '日本円', ret: 0.00, crash: 1.00, color: '#94a3b8', defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#14b8a6', defC: 0, defF: 0 },
@@ -250,7 +250,7 @@
 
         function calculate() {
             updateTotalBar();
-            saveState(); // 全ての計算タイミングで保存
+            saveState(); 
             const age = Number(document.getElementById('currentAge').value) || 35;
             const init = (Number(document.getElementById('initialAsset').value) || 0) * 10000;
             const monthly = (Number(document.getElementById('monthlyAdd').value) || 0) * 10000;
