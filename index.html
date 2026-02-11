@@ -12,7 +12,6 @@
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 24px; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; border-radius: 3px; background: #334155; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #fff; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); border: 2px solid #cbd5e1; }
-        .slider-exit { width: 100%; }
         .tab-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
         .tab-inactive { background-color: #1e293b; color: #94a3b8; border-color: #475569; }
         .sticky-result { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); border-top: 1px solid #334155; padding: 10px; z-index: 50; }
@@ -23,7 +22,7 @@
 
     <header class="mb-4 text-center">
         <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500">simulator8</h1>
-        <p class="text-[10px] text-gray-400">v3.4 記録機能・完全修正版</p>
+        <p class="text-[10px] text-gray-400 font-bold">v3.5 保存機能・最終検査済</p>
     </header>
 
     <div class="input-card p-3 rounded-xl shadow-lg mb-4 space-y-3">
@@ -98,7 +97,7 @@
     </div>
 
     <div class="input-card p-4 rounded-xl shadow-lg mb-4 bg-gradient-to-br from-slate-900 to-slate-800 border-indigo-500/30">
-        <h2 class="text-sm font-bold text-indigo-300 mb-3 flex items-center font-bold text-[12px]"><span class="text-xl mr-2">🚪</span> 出口戦略 (取り崩し)</h2>
+        <h2 class="text-sm font-bold text-indigo-300 mb-3 flex items-center font-bold text-[12px]"><span class="text-xl mr-2">🚪</span> 出口戦略</h2>
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div><label class="text-[10px] text-gray-400 block mb-1">開始年齢</label><input type="number" id="withdrawAge" value="60" oninput="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white text-center font-bold"></div>
             <div><label class="text-[10px] text-gray-400 block mb-1">方法</label><select id="withdrawType" onchange="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white text-center text-xs font-bold h-[42px]"><option value="rate">定率 (％)</option><option value="amount">定額 (万円)</option></select></div>
@@ -164,7 +163,7 @@
         window.onload = () => {
             renderSliders('current');
             renderSliders('future');
-            loadState(); // ここで読み込み
+            loadState(); 
             calculate();
         };
 
@@ -192,13 +191,11 @@
                 </div>`).join('');
         }
 
-        // 数値同期と同時に保存を走らせる
         function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); saveState(); }
         function syncRange(rangeId, val) { 
             const clamped = Math.max(0, Math.min(100, val));
             document.getElementById(rangeId).value = clamped; 
-            calculate(); 
-            saveState();
+            calculate(); saveState();
         }
 
         function saveState() {
@@ -220,28 +217,30 @@
                 state.portfolio[`current_${a.key}`] = document.getElementById(`range_current_${a.key}`).value;
                 state.portfolio[`future_${a.key}`] = document.getElementById(`range_future_${a.key}`).value;
             });
-            localStorage.setItem('simulatorState8', JSON.stringify(state));
+            localStorage.setItem('simulatorState', JSON.stringify(state));
         }
 
         function loadState() {
-            const saved = localStorage.getItem('simulatorState8');
+            const saved = localStorage.getItem('simulatorState');
             if (!saved) return;
-            const state = JSON.parse(saved);
-            Object.keys(state).forEach(key => {
-                if(key === 'portfolio') {
-                    Object.keys(state.portfolio).forEach(pKey => {
-                        const elRange = document.getElementById(`range_${pKey}`);
-                        const elNum = document.getElementById(`num_${pKey}`);
-                        if(elRange) elRange.value = state.portfolio[pKey];
-                        if(elNum) elNum.value = state.portfolio[pKey];
-                    });
-                } else if(key === 'coastFireMode') {
-                    document.getElementById(key).checked = state[key];
-                } else {
-                    const el = document.getElementById(key);
-                    if(el) el.value = state[key];
-                }
-            });
+            try {
+                const state = JSON.parse(saved);
+                Object.keys(state).forEach(key => {
+                    if(key === 'portfolio') {
+                        Object.keys(state.portfolio).forEach(pKey => {
+                            const elRange = document.getElementById(`range_${pKey}`);
+                            const elNum = document.getElementById(`num_${pKey}`);
+                            if(elRange) elRange.value = state.portfolio[pKey];
+                            if(elNum) elNum.value = state.portfolio[pKey];
+                        });
+                    } else if(key === 'coastFireMode') {
+                        document.getElementById(key).checked = state[key];
+                    } else {
+                        const el = document.getElementById(key);
+                        if(el) el.value = state[key];
+                    }
+                });
+            } catch (e) { console.error("Load failed", e); }
         }
 
         function rerollCrash() { memoCrashYears = []; calculate(); saveState(); }
@@ -251,18 +250,14 @@
             if (type === 'defensive') config = { cash: 20, bond: 30, gold: 20, orkan: 30 };
             else if (type === 'standard') config = { orkan: 40, sp500: 60 };
             else if (type === 'aggressive') config = { nasdaq: 30, fang: 20, cyc: 20, cryp: 10, lev: 20 };
-            
             ASSETS.forEach(a => {
                 const rangeId = `range_${activeTab}_${a.key}`;
                 const numId = `num_${activeTab}_${a.key}`;
                 const val = config[a.key] || 0;
-                if(document.getElementById(rangeId)) {
-                    document.getElementById(rangeId).value = val;
-                    document.getElementById(numId).value = val;
-                }
+                if(document.getElementById(rangeId)) document.getElementById(rangeId).value = val;
+                if(document.getElementById(numId)) document.getElementById(numId).value = val;
             });
-            calculate();
-            saveState();
+            calculate(); saveState();
         }
 
         function updateTotalBar() {
@@ -316,8 +311,6 @@
             document.getElementById('specTotalCrash').innerText = (finalCrash > 0 ? -(1-finalCrash)*100 : 0).toFixed(1);
 
             let historyAge = [age], historyAsset = [init/10000], currA = init, currAcc = 0, peak = init, gradAge = null;
-            
-            let crashYears = [];
             if (crashCount > 0) {
                 const key = `${age}-${crashCount}-${crashMode}`;
                 if (memoCrashKey !== key || memoCrashYears.length === 0) {
@@ -327,11 +320,9 @@
                     else arr = arr.reverse().map((_,i)=>(i+1)*2);
                     memoCrashYears = arr.slice(0, crashCount); memoCrashKey = key;
                 }
-                crashYears = memoCrashYears;
             }
-
             for(let i=1; i<=100-age; i++){
-                const isCr = crashYears.includes(i);
+                const isCr = memoCrashYears.includes(i);
                 if(isCoast && (currA+currAcc) >= target && !gradAge) gradAge = age+i-1;
                 if(age+i < wAge){
                     currA *= isCr ? crashC : (1+retC);
@@ -345,12 +336,10 @@
                 const totalNow = currA+currAcc; peak = Math.max(peak, totalNow);
                 historyAge.push(age+i); historyAsset.push(Math.round(totalNow/10000));
             }
-
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = historyAsset[historyAsset.length-1].toLocaleString();
             document.getElementById('graduationAgeArea').classList.toggle('hidden', !gradAge);
             if(gradAge) document.getElementById('graduationAge').innerText = gradAge;
-
             if(myChart){ myChart.data.labels = historyAge; myChart.data.datasets[0].data = historyAsset; myChart.update(); }
             else { myChart = new Chart(document.getElementById('chartCanvas'), { type: 'line', data: { labels: historyAge, datasets: [{ data: historyAsset, borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#334155' } } } } }); }
         }
