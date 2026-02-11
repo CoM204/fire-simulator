@@ -22,15 +22,15 @@
 
     <header class="mb-4 text-center">
         <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500">simulator8</h1>
-        <p class="text-[10px] text-gray-400 font-bold">v3.5 保存機能・最終検査済</p>
+        <p class="text-[10px] text-gray-400 font-bold">v3.6 保存規格統一版</p>
     </header>
 
     <div class="input-card p-3 rounded-xl shadow-lg mb-4 space-y-3">
         <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-[10px] text-gray-400 block mb-0.5">現在の年齢</label><div class="relative"><input type="number" id="currentAge" value="35" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">歳</span></div></div>
-            <div><label class="text-[10px] text-gray-400 block mb-0.5">現在資産</label><div class="relative"><input type="number" id="initialAsset" value="1000" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
-            <div><label class="text-[10px] text-gray-400 block mb-0.5">毎月積立</label><div class="relative"><input type="number" id="monthlyAdd" value="10" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
-            <div><label class="text-[10px] text-yellow-400 block mb-0.5">目標金額</label><div class="relative"><input type="number" id="targetAsset" value="3000" step="100" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-yellow-500/50 rounded text-yellow-100 font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
+            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">現在の年齢</label><div class="relative"><input type="number" id="currentAge" value="35" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">歳</span></div></div>
+            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">現在資産</label><div class="relative"><input type="number" id="initialAsset" value="1000" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
+            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">毎月積立</label><div class="relative"><input type="number" id="monthlyAdd" value="10" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
+            <div><label class="text-[10px] text-yellow-400 block mb-0.5 font-bold">目標金額</label><div class="relative"><input type="number" id="targetAsset" value="3000" step="100" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-yellow-500/50 rounded text-yellow-100 font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
         </div>
         <div class="flex items-center justify-between bg-slate-700/30 p-2 rounded-lg border border-slate-600/50">
             <div class="flex items-center gap-2">
@@ -44,26 +44,21 @@
     <div class="mb-4">
         <div class="input-card p-3 rounded-xl shadow-lg">
             <h2 class="text-xs font-bold text-gray-300 mb-2 font-bold text-[10px]">⚙️ ポートフォリオ配分</h2>
-            
             <div class="flex gap-2 mb-3">
                 <button id="tabCurrent" onclick="switchTab('current')" class="flex-1 py-2 rounded-lg text-[10px] font-bold border tab-active transition">今の資産</button>
                 <button id="tabFuture" onclick="switchTab('future')" class="flex-1 py-2 rounded-lg text-[10px] font-bold border tab-inactive transition">これからの積立</button>
             </div>
-
             <div class="grid grid-cols-3 gap-2 mb-4">
-                <button onclick="applyPreset('defensive')" class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 text-[9px] py-2 rounded hover:bg-emerald-800/50">🛡️ 鉄壁</button>
-                <button onclick="applyPreset('standard')" class="bg-blue-900/40 border border-blue-500/30 text-blue-200 text-[9px] py-2 rounded hover:bg-blue-800/50">👑 王道</button>
-                <button onclick="applyPreset('aggressive')" class="bg-purple-900/40 border border-purple-500/30 text-purple-200 text-[9px] py-2 rounded hover:bg-purple-800/50">🚀 爆益</button>
+                <button onclick="applyPreset('defensive')" class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 text-[9px] py-2 rounded hover:bg-emerald-800/50 font-bold">🛡️ 鉄壁</button>
+                <button onclick="applyPreset('standard')" class="bg-blue-900/40 border border-blue-500/30 text-blue-200 text-[9px] py-2 rounded hover:bg-blue-800/50 font-bold">👑 王道</button>
+                <button onclick="applyPreset('aggressive')" class="bg-purple-900/40 border border-purple-500/30 text-purple-200 text-[9px] py-2 rounded hover:bg-purple-800/50 font-bold">🚀 爆益</button>
             </div>
-
             <div class="mb-3 bg-slate-900 rounded-full h-5 relative overflow-hidden border border-slate-700">
                 <div id="totalProgressBar" class="h-full bg-blue-500 transition-all duration-300" style="width: 100%"></div>
                 <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] font-bold">合計: <span id="totalPercentDisplay">100</span>%</div>
             </div>
-
             <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-2"></div></div>
             <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-2"></div></div>
-
             <div class="mt-4 pt-3 border-t border-slate-600 grid grid-cols-2 gap-2 text-center text-xs">
                 <div class="bg-slate-800/50 p-1 rounded">
                     <p class="text-[9px] text-gray-400 font-bold">現在のポートフォリオ</p>
@@ -77,20 +72,13 @@
                 </div>
             </div>
         </div>
-
         <div class="mt-2 pt-2">
             <div class="bg-slate-800 p-3 rounded-lg border border-indigo-500/50 text-center shadow-lg">
                 <p class="text-[10px] text-indigo-300 mb-1 font-bold">資産全体の総合スペック (10年後目安)</p>
                 <div class="flex justify-center items-center gap-6">
-                    <div>
-                        <p class="text-[9px] text-gray-400 font-bold">期待リターン</p>
-                        <p class="text-3xl font-bold text-white"><span id="specTotalRet">0.0</span>%</p>
-                    </div>
+                    <div><p class="text-[9px] text-gray-400 font-bold">期待リターン</p><p class="text-3xl font-bold text-white"><span id="specTotalRet">0.0</span>%</p></div>
                     <div class="h-10 w-px bg-slate-600"></div>
-                    <div>
-                        <p class="text-[9px] text-red-300 font-bold">暴落時ダメージ</p>
-                        <p class="text-3xl font-bold text-red-400"><span id="specTotalCrash">0.0</span>%</p>
-                    </div>
+                    <div><p class="text-[9px] text-red-300 font-bold">暴落時ダメージ</p><p class="text-3xl font-bold text-red-400"><span id="specTotalCrash">0.0</span>%</p></div>
                 </div>
             </div>
         </div>
@@ -99,23 +87,15 @@
     <div class="input-card p-4 rounded-xl shadow-lg mb-4 bg-gradient-to-br from-slate-900 to-slate-800 border-indigo-500/30">
         <h2 class="text-sm font-bold text-indigo-300 mb-3 flex items-center font-bold text-[12px]"><span class="text-xl mr-2">🚪</span> 出口戦略</h2>
         <div class="grid grid-cols-2 gap-4 mb-4">
-            <div><label class="text-[10px] text-gray-400 block mb-1">開始年齢</label><input type="number" id="withdrawAge" value="60" oninput="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white text-center font-bold"></div>
-            <div><label class="text-[10px] text-gray-400 block mb-1">方法</label><select id="withdrawType" onchange="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white text-center text-xs font-bold h-[42px]"><option value="rate">定率 (％)</option><option value="amount">定額 (万円)</option></select></div>
+            <div><label class="text-[10px] text-gray-400 block mb-1 font-bold">開始年齢</label><input type="number" id="withdrawAge" value="60" oninput="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white font-bold text-center"></div>
+            <div><label class="text-[10px] text-gray-400 block mb-1 font-bold">方法</label><select id="withdrawType" onchange="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white font-bold text-center text-xs h-[42px]"><option value="rate">定率 (％)</option><option value="amount">定額 (万円)</option></select></div>
         </div>
-        
         <div id="inputRateArea" class="block bg-indigo-900/20 rounded-xl p-3 border border-indigo-500/30">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold text-indigo-200 text-[10px]">毎年引き出す割合 (%)</label>
-                <input type="number" id="num_withdrawRate" value="4.0" step="0.1" oninput="syncRange('withdrawRateRange', this.value)" class="num-input">
-            </div>
+            <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-200 text-[10px]">毎年引き出す割合 (%)</label><input type="number" id="num_withdrawRate" value="4.0" step="0.1" oninput="syncRange('withdrawRateRange', this.value)" class="num-input"></div>
             <input type="range" id="withdrawRateRange" min="0" max="10" step="0.1" value="4.0" class="w-full" oninput="syncNum('num_withdrawRate', this.value)">
         </div>
-
         <div id="inputAmountArea" class="hidden bg-indigo-900/20 rounded-xl p-3 border border-indigo-500/30">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold text-indigo-200 text-[10px]">毎月引き出す金額 (万)</label>
-                <input type="number" id="num_withdrawAmt" value="20" oninput="syncRange('withdrawAmountRange', this.value)" class="num-input">
-            </div>
+            <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-200 text-[10px]">毎月引き出す金額 (万)</label><input type="number" id="num_withdrawAmt" value="20" oninput="syncRange('withdrawAmountRange', this.value)" class="num-input"></div>
             <input type="range" id="withdrawAmountRange" min="0" max="100" step="1" value="20" class="w-full" oninput="syncNum('num_withdrawAmt', this.value)">
         </div>
     </div>
@@ -123,15 +103,15 @@
     <div class="input-card p-3 rounded-xl shadow-lg mb-4 bg-red-900/10 border-red-900/30">
         <h2 class="text-xs font-bold text-red-300 mb-2 font-bold text-[10px]">📉 暴落設定</h2>
         <div class="grid grid-cols-2 gap-2">
-            <select id="crashCount" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs text-center"><option value="0">なし</option><option value="2">2回</option><option value="5" selected>5回</option><option value="8">8回</option></select>
-            <div class="flex gap-1"><select id="crashTimingMode" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs text-center flex-1"><option value="random">ランダム</option><option value="early">序盤集中</option><option value="late">終盤集中</option></select><button onclick="rerollCrash()" class="bg-slate-700 px-3 rounded text-lg">🎲</button></div>
+            <select id="crashCount" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs font-bold text-center"><option value="0">なし</option><option value="2">2回</option><option value="5" selected>5回</option><option value="8">8回</option></select>
+            <div class="flex gap-1"><select id="crashTimingMode" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs font-bold text-center flex-1"><option value="random">ランダム</option><option value="early">序盤集中</option><option value="late">終盤集中</option></select><button onclick="rerollCrash()" class="bg-slate-700 px-3 rounded text-lg">🎲</button></div>
         </div>
     </div>
 
     <div class="bg-white/5 p-2 rounded-xl border border-white/10 mb-4 relative h-[300px]"><canvas id="chartCanvas"></canvas></div>
 
     <div class="space-y-2 mb-8">
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口座開設はこちら（PR）</a>
+        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口開はこちら（PR）</a>
         <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg border border-emerald-400/30 font-bold text-xs">三井住友カード（NL）を作る（PR）</a>
     </div>
 
@@ -143,6 +123,7 @@
     <div class="sticky-result"><div class="max-w-md mx-auto grid grid-cols-2 gap-4 text-center"><div><p class="text-[9px] text-gray-400 font-bold">資産ピーク</p><p class="text-lg font-bold text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs">万</span></p></div><div><p class="text-[9px] text-gray-400 font-bold">100歳時点</p><p class="text-sm font-bold text-white"><span id="resEndAsset">0</span><span class="text-xs">万</span></p></div></div></div>
 
     <script>
+        const STORAGE_KEY = 'simulatorState_v1';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', desc: '日本円', ret: 0.00, crash: 1.00, color: '#94a3b8', defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#14b8a6', defC: 0, defF: 0 },
@@ -191,11 +172,11 @@
                 </div>`).join('');
         }
 
-        function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); saveState(); }
+        function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); }
         function syncRange(rangeId, val) { 
             const clamped = Math.max(0, Math.min(100, val));
             document.getElementById(rangeId).value = clamped; 
-            calculate(); saveState();
+            calculate(); 
         }
 
         function saveState() {
@@ -217,21 +198,21 @@
                 state.portfolio[`current_${a.key}`] = document.getElementById(`range_current_${a.key}`).value;
                 state.portfolio[`future_${a.key}`] = document.getElementById(`range_future_${a.key}`).value;
             });
-            localStorage.setItem('simulatorState', JSON.stringify(state));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
 
         function loadState() {
-            const saved = localStorage.getItem('simulatorState');
+            const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
             try {
                 const state = JSON.parse(saved);
                 Object.keys(state).forEach(key => {
                     if(key === 'portfolio') {
                         Object.keys(state.portfolio).forEach(pKey => {
-                            const elRange = document.getElementById(`range_${pKey}`);
-                            const elNum = document.getElementById(`num_${pKey}`);
-                            if(elRange) elRange.value = state.portfolio[pKey];
-                            if(elNum) elNum.value = state.portfolio[pKey];
+                            const r = document.getElementById(`range_${pKey}`);
+                            const n = document.getElementById(`num_${pKey}`);
+                            if(r) r.value = state.portfolio[pKey];
+                            if(n) n.value = state.portfolio[pKey];
                         });
                     } else if(key === 'coastFireMode') {
                         document.getElementById(key).checked = state[key];
@@ -240,10 +221,10 @@
                         if(el) el.value = state[key];
                     }
                 });
-            } catch (e) { console.error("Load failed", e); }
+            } catch (e) {}
         }
 
-        function rerollCrash() { memoCrashYears = []; calculate(); saveState(); }
+        function rerollCrash() { memoCrashYears = []; calculate(); }
 
         function applyPreset(type) {
             let config = {};
@@ -251,13 +232,13 @@
             else if (type === 'standard') config = { orkan: 40, sp500: 60 };
             else if (type === 'aggressive') config = { nasdaq: 30, fang: 20, cyc: 20, cryp: 10, lev: 20 };
             ASSETS.forEach(a => {
-                const rangeId = `range_${activeTab}_${a.key}`;
-                const numId = `num_${activeTab}_${a.key}`;
+                const r = document.getElementById(`range_${activeTab}_${a.key}`);
+                const n = document.getElementById(`num_${activeTab}_${a.key}`);
                 const val = config[a.key] || 0;
-                if(document.getElementById(rangeId)) document.getElementById(rangeId).value = val;
-                if(document.getElementById(numId)) document.getElementById(numId).value = val;
+                if(r) r.value = val;
+                if(n) n.value = val;
             });
-            calculate(); saveState();
+            calculate();
         }
 
         function updateTotalBar() {
@@ -269,6 +250,7 @@
 
         function calculate() {
             updateTotalBar();
+            saveState(); // 全ての計算タイミングで保存
             const age = Number(document.getElementById('currentAge').value) || 35;
             const init = (Number(document.getElementById('initialAsset').value) || 0) * 10000;
             const monthly = (Number(document.getElementById('monthlyAdd').value) || 0) * 10000;
@@ -285,9 +267,8 @@
 
             let retC = 0, retF = 0, crashC = 0, crashF = 0, totalC = 0, totalF = 0;
             ASSETS.forEach(a => {
-                const vc = parseInt(document.getElementById(`range_current_${a.key}`).value)||0;
-                const vf = parseInt(document.getElementById(`range_future_${a.key}`).value)||0;
-                totalC += vc; totalF += vf;
+                totalC += parseInt(document.getElementById(`range_current_${a.key}`).value)||0;
+                totalF += parseInt(document.getElementById(`range_future_${a.key}`).value)||0;
             });
             ASSETS.forEach(a => {
                 if(totalC>0){ const w=parseInt(document.getElementById(`range_current_${a.key}`).value)/totalC; retC+=a.ret*w; crashC+=a.crash*w; }
