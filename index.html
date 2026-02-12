@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v9.1</title>
+    <title>FIRE Simulator v9.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +33,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v9.1</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v9.2</span></h1>
     </header>
 
     <div class="container-grid">
@@ -167,7 +167,10 @@
     <div id="chartModal"><div class="w-full max-w-lg flex justify-between items-center mb-4 px-2"><span class="text-[10px] text-gray-400 font-bold">FULL SCREEN CHART</span><button onclick="closeChartModal()" class="bg-red-500/20 text-red-400 px-4 py-1 rounded-full text-xs font-bold">✕ 閉じる</button></div><canvas id="modalChartCanvas"></canvas></div>
 
     <script>
-        const STORAGE_KEY = 'simulatorState_v91';
+        // 【重要】文字表示プラグインのデフォルトをOFFにする（メイングラフを守るため）
+        Chart.defaults.set('plugins.datalabels', { display: false });
+
+        const STORAGE_KEY = 'simulatorState_v92';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -230,6 +233,7 @@
             const wRate = +document.getElementById('num_withdrawRate').value / 100;
             const crashCount = +document.getElementById('crashCount').value;
             
+            // Calculate Current Tab Data
             let retC=0, crashC=0, totalC=0, pfDataC=[];
             ASSETS.forEach(a => {
                 const v = +document.getElementById(`range_current_${a.key}`).value||0; 
@@ -238,6 +242,7 @@
             });
             ASSETS.forEach(a => { if(totalC>0){ const w=+document.getElementById(`range_current_${a.key}`).value/totalC; retC+=a.ret*w; crashC+=a.crash*w; }});
 
+            // Calculate Future Tab Data
             let retF=0, crashF=0, totalF=0, pfDataF=[];
             ASSETS.forEach(a => {
                 const v = +document.getElementById(`range_future_${a.key}`).value||0; 
@@ -254,7 +259,8 @@
             document.getElementById('specTotalRet').innerText = expRet;
             document.getElementById('specTotalCrash').innerText = maxCrash;
 
-            // Update sub-charts based on tab
+            // UPDATE SUB CHARTS BASED ON ACTIVE TAB
+            // If active tab is current, use retC/crashC/pfDataC. Else use F.
             if (activeTab === 'current') {
                 updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             } else {
@@ -314,10 +320,10 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0, tension:0, datalabels: {display:false} },
-                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData, datalabels: {display:false} },
-                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.8)', fill:true, pointRadius:0, borderWidth:1, order:2, datalabels: {display:false} },
-                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.3)', fill:true, pointRadius:0, borderWidth:2, order:3, datalabels: {display:false} }
+                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0, tension:0 },
+                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData },
+                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.8)', fill:true, pointRadius:0, borderWidth:1, order:2 },
+                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.3)', fill:true, pointRadius:0, borderWidth:2, order:3 }
                     ]
                 },
                 options: { 
@@ -325,7 +331,7 @@
                     maintainAspectRatio:false, 
                     plugins:{
                         legend:{labels:{color:'#94a3b8'}},
-                        datalabels: { display: false } // 【重要】メイングラフの処理落ちを防ぐため強制OFF
+                        datalabels: { display: false } // 【最重要】ここでメイングラフでの文字表示を無効化
                     }, 
                     scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
                     interaction:{mode:'index',intersect:false} 
@@ -337,11 +343,10 @@
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
             
-            // 1. Portfolio (Pie)
+            // 1. Portfolio Pie (Labels ON)
             if(pfChart) pfChart.destroy();
             pfChart = new Chart(ctxPf, {
                 type: 'doughnut',
-                plugins: [ChartDataLabels], // Only enable here
                 data: { 
                     labels: pfData.map(d=>d.name), 
                     datasets: [{ 
@@ -356,6 +361,7 @@
                     plugins:{
                         legend:{display:false}, 
                         datalabels: {
+                            display: true, // 明示的にON
                             color: '#fff',
                             font: { weight: 'bold', size: 10 },
                             formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + val + '%',
@@ -366,11 +372,10 @@
                 }
             });
             
-            // 2. Risk Scenario (Bar)
+            // 2. Risk Bar Chart (Labels ON) - Padding added to top
             if(rrChart) rrChart.destroy();
             rrChart = new Chart(ctxRr, {
                 type: 'bar',
-                plugins: [ChartDataLabels], // Only enable here
                 data: {
                     labels: ['期待リターン', '最大リスク'],
                     datasets: [{
@@ -382,10 +387,12 @@
                 options: {
                     responsive:true, 
                     maintainAspectRatio:false, 
+                    layout: { padding: { top: 30 } }, // 【修正】上に見切れ防止の余白を追加
                     indexAxis: 'x',
                     plugins:{
                         legend:{display:false},
                         datalabels: {
+                            display: true, // 明示的にON
                             color: '#fff',
                             font: { weight: 'bold' },
                             formatter: (val) => val > 0 ? '+' + val + '%' : val + '%',
