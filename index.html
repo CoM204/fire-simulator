@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v8.0</title>
+    <title>FIRE Simulator v8.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -32,7 +33,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v8.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v8.1</span></h1>
     </header>
 
     <div class="container-grid">
@@ -48,7 +49,7 @@
                     <div><label class="text-[10px] text-yellow-500 block mb-1">目標金額 (万)</label><input type="number" id="targetAsset" value="3000" class="glass-input border-yellow-500/30 text-yellow-100"></div>
                 </div>
                 <div class="bg-blue-900/20 p-2 rounded-lg flex items-center gap-2">
-                    <input type="checkbox" id="coastFireMode" class="w-4 h-4"><label for="coastFireMode" class="text-[10px] font-bold text-blue-200">目標達成で積立停止</label>
+                    <input type="checkbox" id="coastFireMode" class="w-4 h-4"><label for="coastFireMode" class="text-[10px] font-bold text-blue-200 cursor-pointer">目標達成で積立停止</label>
                 </div>
                 <div id="graduationAgeArea" class="hidden mt-2 text-center"><span class="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-[10px] font-bold">🎉 <span id="graduationAge">0</span>歳で卒業</span></div>
             </div>
@@ -87,12 +88,10 @@
                     <div class="bg-slate-800/40 p-2 rounded-lg">
                         <p class="text-[9px] text-gray-500 font-bold">現在のPF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400"><span id="tabRetCurrent">0.0</span>%</span></div>
-                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskCurrent">0.0</span>%</span></div>
                     </div>
                     <div class="bg-slate-800/40 p-2 rounded-lg">
                         <p class="text-[9px] text-gray-500 font-bold">積立PF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400"><span id="tabRetFuture">0.0</span>%</span></div>
-                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskFuture">0.0</span>%</span></div>
                     </div>
                 </div>
             </div>
@@ -125,6 +124,11 @@
                     <input type="file" id="importFile" style="display: none;" onchange="importSettings(this)">
                 </div>
             </div>
+            
+            <div class="space-y-3 mb-10 lg:mb-0 text-center">
+                <a href="#" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-white font-bold text-xs">SBI証券 口座開設 (PR)</a>
+                <a href="#" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-white font-bold text-xs">三井住友カード (PR)</a>
+            </div>
         </div>
 
         <div class="result-column chart-area">
@@ -146,8 +150,8 @@
                     <div class="h-[150px] flex justify-center"><canvas id="portfolioChart"></canvas></div>
                 </div>
                 <div class="glass-card p-4 text-center">
-                    <p class="text-[10px] text-gray-400 font-bold mb-2">RISK / RETURN MAP</p>
-                    <div class="h-[150px]"><canvas id="riskReturnChart"></canvas></div>
+                    <p class="text-[10px] text-gray-400 font-bold mb-2">RISK SCENARIO</p>
+                    <div class="h-[150px] flex justify-center"><canvas id="riskReturnChart"></canvas></div>
                 </div>
             </div>
 
@@ -160,8 +164,13 @@
         </div>
     </div>
 
+    <div id="chartModal"><div class="w-full max-w-lg flex justify-between items-center mb-4 px-2"><span class="text-[10px] text-gray-400 font-bold">FULL SCREEN CHART</span><button onclick="closeChartModal()" class="bg-red-500/20 text-red-400 px-4 py-1 rounded-full text-xs font-bold">✕ 閉じる</button></div><canvas id="modalChartCanvas"></canvas></div>
+
     <script>
-        const STORAGE_KEY = 'simulatorState_v80';
+        // Register DataLabels Plugin globally
+        Chart.register(ChartDataLabels);
+
+        const STORAGE_KEY = 'simulatorState_v81';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -178,7 +187,7 @@
         ];
 
         let activeTab = 'current';
-        let myChart = null, pfChart = null, rrChart = null;
+        let myChart = null, pfChart = null, rrChart = null, modalChart = null;
         let memoCrashYears = [], memoCrashKey = '', actualHistory = [], lockedData = null;
 
         window.onload = () => {
@@ -204,8 +213,8 @@
             updateTotalBar(); saveState();
             const age = +document.getElementById('currentAge').value || 35;
             const init = (+document.getElementById('initialAsset').value || 0) * 10000;
-            const monthly = (+document.getElementById('monthlyAdd').value || 0) * 10000;
-            const target = (+document.getElementById('targetAsset').value || 3000) * 10000;
+            const monthly = (+document.getElementById('monthlyAdd').value) * 10000;
+            const target = (+document.getElementById('targetAsset').value) * 10000;
             const wAge = +document.getElementById('withdrawAge').value || 60;
             const wRate = +document.getElementById('num_withdrawRate').value / 100;
             const crashCount = +document.getElementById('crashCount').value;
@@ -215,13 +224,16 @@
             ASSETS.forEach(a => { if(totC>0){const w=parseInt(document.getElementById(`range_current_${a.key}`).value)/totC; retC+=a.ret*w; crashC+=a.crash*w;} if(totF>0){const w=parseInt(document.getElementById(`range_future_${a.key}`).value)/totF; retF+=a.ret*w; crashF+=a.crash*w;} });
 
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
-            document.getElementById('tabRiskCurrent').innerText = totC>0?(-(1-crashC)*100).toFixed(1):'0.0';
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
-            document.getElementById('tabRiskFuture').innerText = totF>0?(-(1-crashF)*100).toFixed(1):'0.0';
-            document.getElementById('specTotalRet').innerText = ((retC+retF)/2*100).toFixed(1);
-            document.getElementById('specTotalCrash').innerText = (-(1-(crashC+crashF)/2)*100).toFixed(1);
+            const rValC = (1-crashC)*100, rValF = (1-crashF)*100;
+            
+            const expRet = ((retC+retF)/2*100).toFixed(1);
+            const maxCrash = (-(1-(crashC+crashF)/2)*100).toFixed(1);
+            document.getElementById('specTotalRet').innerText = expRet;
+            document.getElementById('specTotalCrash').innerText = maxCrash;
 
-            updateSubCharts(retC, crashC, pfData); // Simplified for current view
+            // Update new Sub Charts
+            updateSubCharts(expRet, maxCrash, pfData);
 
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             
@@ -243,7 +255,7 @@
                 let add=0; if(age+i<wAge && !gAge) { add=monthly*12; cP+=add; }
                 if(age+i<wAge) { cA*=isCr?crashC:(1+retC); cAcc=(cAcc+add)*(isCr?crashF:(1+retF)); }
                 else {
-                    let tot=cA+cAcc; let wAmt = document.getElementById('withdrawType').value==='rate' ? tot*wRate : 0; // Simplified withdraw logic
+                    let tot=cA+cAcc; let wAmt = document.getElementById('withdrawType').value==='rate' ? tot*wRate : 0;
                     if(tot>0){ let r=wAmt/tot; if(r>1)r=1; cP-=cP*r; }
                     tot=Math.max(0, tot-wAmt);
                     tot*=isCr?(cA*crashC+cAcc*crashF)/(cA+cAcc||1):(1+(cA*retC+cAcc*retF)/(cA+cAcc||1));
@@ -256,7 +268,6 @@
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
             renderAchievement(rAge);
             
-            // Diff
             if(actualHistory.length>0){
                 const last=actualHistory[actualHistory.length-1], idx=hAge.indexOf(last.age);
                 if(idx>=0) {
@@ -277,35 +288,94 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0, tension:0 },
-                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData },
-                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.8)', fill:true, pointRadius:0, borderWidth:0, order:2, stack:'stack1' },
-                        { label:'利益', data:dTotal.map((v,i)=>v-dPrin[i]), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.6)', fill:true, pointRadius:0, borderWidth:0, order:3, stack:'stack1' } // Profit is Total - Principal
+                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0, tension:0, datalabels: {display:false} },
+                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData, datalabels: {display:false} },
+                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.8)', fill:true, pointRadius:0, borderWidth:1, order:2, datalabels: {display:false} },
+                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.3)', fill:true, pointRadius:0, borderWidth:2, order:3, datalabels: {display:false} }
                     ]
                 },
-                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:true, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, interaction:{mode:'index',intersect:false} }
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, interaction:{mode:'index',intersect:false} }
             });
         }
 
-        function updateSubCharts(ret, crash, pfData) {
+        // Modified updateSubCharts to match attached image style
+        function updateSubCharts(retVal, crashVal, pfData) {
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
-            if(pfChart) pfChart.destroy();
-            pfChart = new Chart(ctxPf, { type:'doughnut', data:{labels:pfData.map(d=>d.name), datasets:[{data:pfData.map(d=>d.val), backgroundColor:pfData.map(d=>d.color), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'70%'} });
             
+            // 1. Portfolio Chart with DataLabels (Name + %)
+            if(pfChart) pfChart.destroy();
+            pfChart = new Chart(ctxPf, {
+                type: 'doughnut',
+                data: { 
+                    labels: pfData.map(d=>d.name), 
+                    datasets: [{ 
+                        data: pfData.map(d=>d.val), 
+                        backgroundColor: pfData.map(d=>d.color), 
+                        borderWidth:0 
+                    }] 
+                },
+                options: { 
+                    responsive:true, 
+                    maintainAspectRatio:false, 
+                    plugins:{
+                        legend:{display:false}, 
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: (val, ctx) => {
+                                let label = ctx.chart.data.labels[ctx.dataIndex];
+                                return label + '\n' + val + '%';
+                            },
+                            anchor: 'center',
+                            align: 'center',
+                            offset: 0
+                        }
+                    }, 
+                    cutout:'50%' 
+                }
+            });
+            
+            // 2. Risk Scenario (Bar Chart) - Matching attachment "Risk Scenario"
             if(rrChart) rrChart.destroy();
-            const r=ret*100, rsk=(1-crash)*100;
-            rrChart = new Chart(ctxRr, { type:'scatter', data:{datasets:[{data:[{x:rsk, y:r}], backgroundColor:'#facc15', pointRadius:6}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{min:0,max:60,grid:{color:'#334155'}}, y:{min:0,max:20,grid:{color:'#334155'}}} } });
+            rrChart = new Chart(ctxRr, {
+                type: 'bar',
+                data: {
+                    labels: ['期待リターン', '最大リスク'],
+                    datasets: [{
+                        data: [parseFloat(retVal), parseFloat(crashVal)],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive:true, 
+                    maintainAspectRatio:false, 
+                    indexAxis: 'x',
+                    plugins:{
+                        legend:{display:false},
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold' },
+                            formatter: (val) => val > 0 ? '+' + val + '%' : val + '%',
+                            anchor: 'end',
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 ? 'top' : 'bottom'
+                        }
+                    }, 
+                    scales:{
+                        x:{ grid:{display:false}, ticks:{color:'#94a3b8', font:{size:10}} }, 
+                        y:{ grid:{color:'#334155'}, ticks:{color:'#64748b'}, beginAtZero:true }
+                    } 
+                }
+            });
         }
 
-        function renderAchievement(age) {
-            const html = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`;
-            document.getElementById('achievementMobile').innerHTML = html; document.getElementById('achievementDesktop').innerHTML = html;
-        }
+        // Utils
+        function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[3].data]; alert('固定しました'); calculate(); } }
         function addHistory() { const age=+document.getElementById('histAge').value, asset=+document.getElementById('histAsset').value; if(age&&asset){ const i=actualHistory.findIndex(x=>x.age===age); if(i>=0)actualHistory[i]={age,asset}; else actualHistory.push({age,asset}); actualHistory.sort((a,b)=>a.age-b.age); updateHistoryList(); calculate(); } }
-        function updateHistoryList() { document.getElementById('historyList').innerHTML = actualHistory.map((h,i)=>`<div class="history-item"><span>${h.age}歳: ${h.asset}万</span><span class="text-red-500 cursor-pointer" onclick="actualHistory.splice(${i},1);updateHistoryList();calculate()">×</span></div>`).join('') || '<div class="text-center text-[10px] text-gray-500">データなし</div>'; }
-        function lockComparison() { if(myChart) { lockedData = myChart.data.datasets[3].data.map((p,i) => p + myChart.data.datasets[2].data[i]); alert('固定しました'); calculate(); } } // Fixed lock logic for stacked
-        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentAge:document.getElementById('currentAge').value, portfolio: {}, actualHistory })); }
+        function updateHistoryList() { document.getElementById('historyList').innerHTML = actualHistory.map((h,i)=>`<div class="history-item"><span>${h.age}歳: ${h.asset}万</span><span class="text-red-500 cursor-pointer" onclick="actualHistory.splice(${i},1);updateHistoryList();calculate()">×</span></div>`).join('') || '<div class="text-center text-xs text-gray-500">データなし</div>'; }
+        function renderAchievement(age) { document.getElementById('achievementMobile').innerHTML = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`; document.getElementById('achievementDesktop').innerHTML = document.getElementById('achievementMobile').innerHTML; }
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentAge:document.getElementById('currentAge').value, portfolio: {}, actualHistory })); } 
         function loadState() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(s && s.actualHistory) { actualHistory=s.actualHistory; updateHistoryList(); } } catch(e){} }
         function exportSettings() { const s=localStorage.getItem(STORAGE_KEY); if(s){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([s],{type:'application/json'})); a.download='setting.json'; a.click(); } }
         function triggerImport() { document.getElementById('importFile').click(); }
@@ -313,6 +383,8 @@
         function downloadChart() { const a=document.createElement('a'); a.href=document.getElementById('chartCanvas').toDataURL(); a.download='chart.png'; a.click(); }
         function shareViaEmail() { location.href='mailto:?subject=Sim&body=Check'; }
         function rerollCrash() { memoCrashYears=[]; calculate(); }
+        function closeChartModal() { document.getElementById('chartModal').style.display='none'; }
+        function openChartModal() { document.getElementById('chartModal').style.display='flex'; if(modalChart)modalChart.destroy(); modalChart=new Chart(document.getElementById('modalChartCanvas'), {type:'line',data:myChart.data,options:myChart.options}); }
     </script>
 </body>
 </html>
