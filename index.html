@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v9.4</title>
+    <title>FIRE Simulator v10.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,7 +24,7 @@
             .chart-area { position: sticky; top: 20px; }
             .sub-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             .sticky-result { position: static !important; background: transparent !important; padding: 0 !important; margin-top: 20px; border: none !important; }
-            .mobile-chart-only { display: none; } /* Hide mobile duplicate chart on PC */
+            .mobile-chart-only { display: none; } /* PCでは上部グラフを非表示 */
         }
         .sticky-result { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(11, 15, 25, 0.95); padding: 12px; z-index: 50; border-top: 1px solid rgba(255,255,255,0.1); }
         #chartModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
@@ -34,7 +34,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v9.4</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v10.0</span></h1>
     </header>
 
     <div class="lg:hidden mb-6 mobile-chart-only">
@@ -176,10 +176,10 @@
     <div id="chartModal"><div class="w-full max-w-lg flex justify-between items-center mb-4 px-2"><span class="text-[10px] text-gray-400 font-bold">FULL SCREEN CHART</span><button onclick="closeChartModal()" class="bg-red-500/20 text-red-400 px-4 py-1 rounded-full text-xs font-bold">✕ 閉じる</button></div><canvas id="modalChartCanvas"></canvas></div>
 
     <script>
-        // 【重要】グローバル登録はしない（メインチャート保護のため）
-        // Chart.register(ChartDataLabels); 
+        // 【重要】DataLabelsのグローバル登録を解除（メインチャートのフリーズ防止）
+        Chart.unregister(ChartDataLabels);
 
-        const STORAGE_KEY = 'simulatorState_v94';
+        const STORAGE_KEY = 'simulatorState_v100';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -196,9 +196,7 @@
         ];
 
         let activeTab = 'current';
-        // チャート変数を2つ用意（PC用とモバイル用）
-        let myChart = null, myChartMobile = null; 
-        let pfChart = null, rrChart = null, modalChart = null;
+        let myChart = null, myChartMobile = null, pfChart = null, rrChart = null, modalChart = null;
         let memoCrashYears = [], memoCrashKey = '', actualHistory = [], lockedData = null;
 
         window.onload = () => {
@@ -223,11 +221,9 @@
             document.getElementById('containerFuture').classList.toggle('hidden', t!=='future'); 
             document.getElementById('tabCurrent').className=t==='current'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
             document.getElementById('tabFuture').className=t==='future'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
-            
             const suffix = t === 'current' ? '(今の資産)' : '(積立)';
             document.getElementById('chartLabelType').innerText = suffix;
             document.getElementById('riskLabelType').innerText = suffix;
-
             updateTotalBar(); calculate(); 
         }
 
@@ -252,7 +248,6 @@
             ASSETS.forEach(a => { const v = +document.getElementById(`range_future_${a.key}`).value||0; totalF += v; if(v>0) pfDataF.push({name:a.name, val:v, color:a.color}); });
             ASSETS.forEach(a => { if(totalF>0){ const w=+document.getElementById(`range_future_${a.key}`).value/totalF; retF+=a.ret*w; crashF+=a.crash*w; }});
 
-            // Update Text Stats
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
             document.getElementById('tabRiskCurrent').innerText = totalC>0 ? (-(1-crashC)*100).toFixed(1) : '0.0';
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
@@ -263,15 +258,8 @@
             document.getElementById('specTotalRet').innerText = expRet;
             document.getElementById('specTotalCrash').innerText = maxCrash;
 
-            // UPDATE SUB CHARTS
-            if (activeTab === 'current') {
-                updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
-            } else {
-                updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
-            }
-
+            // まずメインチャートを描画（エラーでもサブチャートが止まらないように）
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
-            
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -312,6 +300,13 @@
             } else document.getElementById('gapDisplay').innerText='';
 
             drawMainChart(hAge, hTotal, hPrin);
+
+            // 最後にサブチャート描画
+            if (activeTab === 'current') {
+                updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
+            } else {
+                updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
+            }
         }
 
         function drawMainChart(labels, dTotal, dPrin) {
@@ -321,10 +316,15 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0, tension:0 },
-                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData },
-                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(100,116,139,0.8)', fill:true, pointRadius:0, borderWidth:1, order:2 },
-                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.3)', fill:true, pointRadius:0, borderWidth:2, order:3 }
+                        // 【描画順序修正】Order 0 = 一番奥(背景), Order 99 = 一番手前
+                        // 1. 資産総額 (背景) - Order 0
+                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.3)', fill:true, pointRadius:0, borderWidth:2, order:0 },
+                        // 2. 元本 (中層) - Order 1 - 青の上にグレーを重ねる
+                        { label:'元本', data:dPrin, borderColor:'#64748b', backgroundColor:'rgba(15,23,42,0.9)', fill:true, pointRadius:0, borderWidth:1, order:1 },
+                        // 3. 比較 (点線) - Order 2
+                        { label:'比較', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData },
+                        // 4. 実績 (最前面) - Order 3
+                        { label:'実績', data:dHist, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:3, tension:0 }
                     ]
                 },
                 options: { 
@@ -332,19 +332,19 @@
                     maintainAspectRatio:false, 
                     plugins:{
                         legend:{labels:{color:'#94a3b8'}},
-                        datalabels: { display: false } // 【最重要】メイングラフでは無効化
+                        datalabels: { display: false } // メイングラフでは無効化
                     }, 
                     scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
                     interaction:{mode:'index',intersect:false} 
                 }
             };
 
-            // PC用チャート描画
+            // PC用
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, config);
 
-            // モバイル用チャート描画 (クローンconfig)
+            // スマホ用
             const ctxMob = document.getElementById('chartCanvasMobile').getContext('2d');
             if(myChartMobile) myChartMobile.destroy();
             myChartMobile = new Chart(ctxMob, JSON.parse(JSON.stringify(config)));
@@ -358,7 +358,7 @@
             if(pfChart) pfChart.destroy();
             pfChart = new Chart(ctxPf, {
                 type: 'doughnut',
-                plugins: [ChartDataLabels], // Only enable here
+                plugins: [ChartDataLabels], 
                 data: { 
                     labels: pfData.map(d=>d.name), 
                     datasets: [{ 
@@ -387,7 +387,7 @@
             if(rrChart) rrChart.destroy();
             rrChart = new Chart(ctxRr, {
                 type: 'bar',
-                plugins: [ChartDataLabels], // Only enable here
+                plugins: [ChartDataLabels],
                 data: {
                     labels: ['期待リターン', '最大リスク'],
                     datasets: [{
@@ -399,7 +399,7 @@
                 options: {
                     responsive:true, 
                     maintainAspectRatio:false, 
-                    layout: { padding: { top: 40 } }, // 【修正】パディング追加で上切れ防止
+                    layout: { padding: { top: 40 } }, 
                     indexAxis: 'x',
                     plugins:{
                         legend:{display:false},
@@ -419,7 +419,7 @@
             });
         }
 
-        function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[3].data]; alert('固定しました'); calculate(); } }
+        function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[0].data]; alert('固定しました'); calculate(); } }
         function addHistory() { const age=+document.getElementById('histAge').value, asset=+document.getElementById('histAsset').value; if(age&&asset){ const i=actualHistory.findIndex(x=>x.age===age); if(i>=0)actualHistory[i]={age,asset}; else actualHistory.push({age,asset}); actualHistory.sort((a,b)=>a.age-b.age); updateHistoryList(); calculate(); } }
         function updateHistoryList() { document.getElementById('historyList').innerHTML = actualHistory.map((h,i)=>`<div class="history-item"><span>${h.age}歳: ${h.asset}万</span><span class="text-red-500 cursor-pointer" onclick="actualHistory.splice(${i},1);updateHistoryList();calculate()">×</span></div>`).join('') || '<div class="text-center text-xs text-gray-500">データなし</div>'; }
         function renderAchievement(age) { document.getElementById('achievementMobile').innerHTML = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`; document.getElementById('achievementDesktop').innerHTML = document.getElementById('achievementMobile').innerHTML; }
