@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v9.2</title>
+    <title>FIRE Simulator v9.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +33,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v9.2</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v9.3</span></h1>
     </header>
 
     <div class="container-grid">
@@ -86,12 +86,14 @@
                 
                 <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
                     <div class="bg-slate-800/40 p-2 rounded-lg">
-                        <p class="text-[9px] text-gray-500 font-bold">現在のPF</p>
+                        <p class="text-[9px] text-gray-500 font-bold mb-1">現在のPF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400"><span id="tabRetCurrent">0.0</span>%</span></div>
+                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskCurrent">0.0</span>%</span></div>
                     </div>
                     <div class="bg-slate-800/40 p-2 rounded-lg">
                         <p class="text-[9px] text-gray-500 font-bold">積立PF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400"><span id="tabRetFuture">0.0</span>%</span></div>
+                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskFuture">0.0</span>%</span></div>
                     </div>
                 </div>
             </div>
@@ -167,10 +169,10 @@
     <div id="chartModal"><div class="w-full max-w-lg flex justify-between items-center mb-4 px-2"><span class="text-[10px] text-gray-400 font-bold">FULL SCREEN CHART</span><button onclick="closeChartModal()" class="bg-red-500/20 text-red-400 px-4 py-1 rounded-full text-xs font-bold">✕ 閉じる</button></div><canvas id="modalChartCanvas"></canvas></div>
 
     <script>
-        // 【重要】文字表示プラグインのデフォルトをOFFにする（メイングラフを守るため）
-        Chart.defaults.set('plugins.datalabels', { display: false });
+        // 【重要】文字表示プラグインを全体で無効化し、必要な箇所のみ有効化する（メイングラフ保護）
+        Chart.unregister(ChartDataLabels);
 
-        const STORAGE_KEY = 'simulatorState_v92';
+        const STORAGE_KEY = 'simulatorState_v93';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -233,7 +235,7 @@
             const wRate = +document.getElementById('num_withdrawRate').value / 100;
             const crashCount = +document.getElementById('crashCount').value;
             
-            // Calculate Current Tab Data
+            // Calc Current
             let retC=0, crashC=0, totalC=0, pfDataC=[];
             ASSETS.forEach(a => {
                 const v = +document.getElementById(`range_current_${a.key}`).value||0; 
@@ -242,7 +244,7 @@
             });
             ASSETS.forEach(a => { if(totalC>0){ const w=+document.getElementById(`range_current_${a.key}`).value/totalC; retC+=a.ret*w; crashC+=a.crash*w; }});
 
-            // Calculate Future Tab Data
+            // Calc Future
             let retF=0, crashF=0, totalF=0, pfDataF=[];
             ASSETS.forEach(a => {
                 const v = +document.getElementById(`range_future_${a.key}`).value||0; 
@@ -251,16 +253,18 @@
             });
             ASSETS.forEach(a => { if(totalF>0){ const w=+document.getElementById(`range_future_${a.key}`).value/totalF; retF+=a.ret*w; crashF+=a.crash*w; }});
 
+            // Update Text Stats (Risk Display is back)
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
+            document.getElementById('tabRiskCurrent').innerText = totalC>0 ? (-(1-crashC)*100).toFixed(1) : '0.0';
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
+            document.getElementById('tabRiskFuture').innerText = totalF>0 ? (-(1-crashF)*100).toFixed(1) : '0.0';
             
             const expRet = ((retC+retF)/2*100).toFixed(1);
             const maxCrash = (-(1-(crashC+crashF)/2)*100).toFixed(1);
             document.getElementById('specTotalRet').innerText = expRet;
             document.getElementById('specTotalCrash').innerText = maxCrash;
 
-            // UPDATE SUB CHARTS BASED ON ACTIVE TAB
-            // If active tab is current, use retC/crashC/pfDataC. Else use F.
+            // UPDATE SUB CHARTS
             if (activeTab === 'current') {
                 updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             } else {
@@ -330,8 +334,8 @@
                     responsive:true, 
                     maintainAspectRatio:false, 
                     plugins:{
-                        legend:{labels:{color:'#94a3b8'}},
-                        datalabels: { display: false } // 【最重要】ここでメイングラフでの文字表示を無効化
+                        legend:{labels:{color:'#94a3b8'}}
+                        // 【重要】DataLabelsプラグインはグローバルで無効化しているのでここでは何も書かなくてOK
                     }, 
                     scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
                     interaction:{mode:'index',intersect:false} 
@@ -343,10 +347,11 @@
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
             
-            // 1. Portfolio Pie (Labels ON)
+            // 1. Portfolio Pie (Plugins enabled explicitly)
             if(pfChart) pfChart.destroy();
             pfChart = new Chart(ctxPf, {
                 type: 'doughnut',
+                plugins: [ChartDataLabels], 
                 data: { 
                     labels: pfData.map(d=>d.name), 
                     datasets: [{ 
@@ -361,7 +366,6 @@
                     plugins:{
                         legend:{display:false}, 
                         datalabels: {
-                            display: true, // 明示的にON
                             color: '#fff',
                             font: { weight: 'bold', size: 10 },
                             formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + val + '%',
@@ -372,10 +376,11 @@
                 }
             });
             
-            // 2. Risk Bar Chart (Labels ON) - Padding added to top
+            // 2. Risk Bar (Plugins enabled + PADDING FIXED)
             if(rrChart) rrChart.destroy();
             rrChart = new Chart(ctxRr, {
                 type: 'bar',
+                plugins: [ChartDataLabels],
                 data: {
                     labels: ['期待リターン', '最大リスク'],
                     datasets: [{
@@ -387,12 +392,11 @@
                 options: {
                     responsive:true, 
                     maintainAspectRatio:false, 
-                    layout: { padding: { top: 30 } }, // 【修正】上に見切れ防止の余白を追加
+                    layout: { padding: { top: 40 } }, // 【修正】上に見切れ防止の余白を十分に追加
                     indexAxis: 'x',
                     plugins:{
                         legend:{display:false},
                         datalabels: {
-                            display: true, // 明示的にON
                             color: '#fff',
                             font: { weight: 'bold' },
                             formatter: (val) => val > 0 ? '+' + val + '%' : val + '%',
