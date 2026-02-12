@@ -56,6 +56,13 @@
             .chart-area { position: sticky; top: 20px; }
             .sticky-result { position: static !important; background: transparent !important; border: none !important; backdrop-filter: none !important; padding: 0 !important; margin-top: 20px; }
             .sticky-result .grid { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; }
+            
+            /* 右下のグリッドレイアウト */
+            .sub-charts-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
         }
 
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; }
@@ -88,7 +95,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight">FIRE Simulator <span class="text-xs text-gray-500 font-normal align-middle ml-1">v5.5</span></h1>
+        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight">FIRE Simulator <span class="text-xs text-gray-500 font-normal align-middle ml-1">v6.0</span></h1>
     </header>
 
     <div class="container-grid">
@@ -101,9 +108,7 @@
                     <div class="w-1 h-4 bg-slate-400 rounded-full mr-2"></div>
                     <h2 class="text-xs font-bold text-slate-300 tracking-wider">DATA & COMPARE</h2>
                 </div>
-                <button onclick="lockComparison()" class="w-full bg-indigo-600/80 hover:bg-indigo-500 text-white text-[10px] font-bold py-2 rounded border border-indigo-400/50 mb-2 transition shadow-lg flex justify-center items-center gap-1">
-                    📌 現在のプランを比較用に固定
-                </button>
+                <button onclick="lockComparison()" class="w-full bg-indigo-600/80 hover:bg-indigo-500 text-white text-[10px] font-bold py-2 rounded border border-indigo-400/50 mb-2 transition shadow-lg flex justify-center items-center gap-1">📌 現在のプランを比較用に固定</button>
                 <div class="flex gap-2">
                     <button onclick="exportSettings()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold py-2 rounded border border-slate-500/50 transition flex justify-center items-center gap-1">💾 保存</button>
                     <button onclick="triggerImport()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold py-2 rounded border border-slate-500/50 transition flex justify-center items-center gap-1">📂 読込</button>
@@ -169,16 +174,6 @@
                 </div>
                 <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
                 <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
-                <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
-                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
-                        <p class="text-[9px] text-gray-500 font-bold mb-1">現在のPF</p>
-                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400 text-glow"><span id="tabRetCurrent">0.0</span>%</span></div>
-                    </div>
-                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
-                        <p class="text-[9px] text-gray-500 font-bold mb-1">積立PF</p>
-                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400 text-glow"><span id="tabRetFuture">0.0</span>%</span></div>
-                    </div>
-                </div>
             </div>
 
             <div class="glass-card p-4 mb-5 border-indigo-500/20 bg-indigo-900/10">
@@ -232,6 +227,21 @@
                 <canvas id="chartCanvas"></canvas>
             </div>
 
+            <div class="sub-charts-grid mb-5">
+                <div class="glass-card p-4 relative">
+                    <p class="text-[10px] text-gray-400 font-bold mb-2 text-center">ASSET ALLOCATION</p>
+                    <div class="relative h-[150px] flex justify-center">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card p-4 relative">
+                    <p class="text-[10px] text-gray-400 font-bold mb-2 text-center">RISK / RETURN MAP</p>
+                    <div class="relative h-[150px]">
+                        <canvas id="riskReturnChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-5">
                 <div class="glass-card p-5 relative overflow-hidden border-indigo-500/30">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
@@ -280,24 +290,27 @@
 
     <script>
         const STORAGE_KEY = 'simulatorState_v37';
+        // ASSETS定義 (カテゴリー追加)
         const ASSETS = [
-            { key: 'cash', name: '💴 現金', desc: '日本円', ret: 0.00, crash: 1.00, color: '#64748b', defC: 50, defF: 0 },
-            { key: 'bond', name: '📜 債券', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#2dd4bf', defC: 0, defF: 0 },
-            { key: 'gold', name: '🥇 金',   desc: '安全資産', ret: 0.04, crash: 0.85, color: '#fbbf24', defC: 0, defF: 0 },
-            { key: 'reit', name: '🏢 不動産', desc: 'REIT', ret: 0.045, crash: 0.75, color: '#a855f7', defC: 0, defF: 0 },
-            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界株', ret: 0.05, crash: 0.75, color: '#10b981', defC: 50, defF: 50 },
-            { key: 'sp500', name: '⚔️ S&P500', desc: '米国TOP500', ret: 0.10, crash: 0.60, color: '#3b82f6', defC: 0, defF: 30 },
-            { key: 'nasdaq', name: '💻 NASDAQ', desc: 'ハイテク株', ret: 0.13, crash: 0.50, color: '#06b6d4', defC: 0, defF: 20 },
-            { key: 'fang', name: '💎 FANG+', desc: '超大型IT', ret: 0.17, crash: 0.45, color: '#f472b6', defC: 0, defF: 0 },
-            { key: 'cyc', name: '🔥 景気敏感', desc: '半導体等', ret: 0.15, crash: 0.45, color: '#ef4444', defC: 0, defF: 0 },
-            { key: 'def', name: '🛡️ ディフェン', desc: '電力・薬品', ret: 0.06, crash: 0.75, color: '#84cc16', defC: 0, defF: 0 },
-            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等', ret: 0.30, crash: 0.30, color: '#8b5cf6', defC: 0, defF: 0 },
-            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQ×2', ret: 0.25, crash: 0.25, color: '#ec4899', defC: 0, defF: 0 }
+            { key: 'cash', name: '💴 現金', cat:'cash', desc: '日本円', ret: 0.00, crash: 1.00, color: '#64748b', defC: 50, defF: 0 },
+            { key: 'bond', name: '📜 債券', cat:'bond', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#2dd4bf', defC: 0, defF: 0 },
+            { key: 'gold', name: '🥇 金',   cat:'gold', desc: '安全資産', ret: 0.04, crash: 0.85, color: '#fbbf24', defC: 0, defF: 0 },
+            { key: 'reit', name: '🏢 不動産', cat:'reit', desc: 'REIT', ret: 0.045, crash: 0.75, color: '#a855f7', defC: 0, defF: 0 },
+            { key: 'orkan', name: '🛡️ オルカン', cat:'stock', desc: '全世界株', ret: 0.05, crash: 0.75, color: '#10b981', defC: 50, defF: 50 },
+            { key: 'sp500', name: '⚔️ S&P500', cat:'stock', desc: '米国TOP500', ret: 0.10, crash: 0.60, color: '#3b82f6', defC: 0, defF: 30 },
+            { key: 'nasdaq', name: '💻 NASDAQ', cat:'stock', desc: 'ハイテク株', ret: 0.13, crash: 0.50, color: '#06b6d4', defC: 0, defF: 20 },
+            { key: 'fang', name: '💎 FANG+', cat:'stock', desc: '超大型IT', ret: 0.17, crash: 0.45, color: '#f472b6', defC: 0, defF: 0 },
+            { key: 'cyc', name: '🔥 景気敏感', cat:'stock', desc: '半導体等', ret: 0.15, crash: 0.45, color: '#ef4444', defC: 0, defF: 0 },
+            { key: 'def', name: '🛡️ ディフェン', cat:'stock', desc: '電力・薬品', ret: 0.06, crash: 0.75, color: '#84cc16', defC: 0, defF: 0 },
+            { key: 'cryp', name: '₿ 仮想通貨', cat:'other', desc: 'BTC等', ret: 0.30, crash: 0.30, color: '#8b5cf6', defC: 0, defF: 0 },
+            { key: 'lev', name: '🚀 レバナス', cat:'other', desc: 'NASDAQ×2', ret: 0.25, crash: 0.25, color: '#ec4899', defC: 0, defF: 0 }
         ];
 
-        let activeTab = 'current'; let myChart = null; let modalChart = null; let memoCrashYears = []; let memoCrashKey = '';
+        let activeTab = 'current'; let myChart = null; let modalChart = null; 
+        let pfChart = null; let rrChart = null; // 新しいチャート用変数
+        let memoCrashYears = []; let memoCrashKey = '';
         let actualHistory = [];
-        let lockedData = null; // 比較用ロックデータ
+        let lockedData = null;
 
         window.onload = () => { renderSliders('current'); renderSliders('future'); loadState(); calculate(); };
 
@@ -308,6 +321,7 @@
             document.getElementById('tabCurrent').className = tab === 'current' ? 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-active' : 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-inactive';
             document.getElementById('tabFuture').className = tab === 'future' ? 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-active' : 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-inactive';
             updateTotalBar();
+            calculate(); // グラフ更新のために再計算
         }
 
         function renderSliders(type) {
@@ -332,32 +346,26 @@
             calculate(); 
         }
 
-        // --- 比較機能 ---
         function lockComparison() {
             if(!myChart || !myChart.data.datasets[1]) return;
-            // 現在の「利益+元本」の合計推移をコピーして保存
             const profit = myChart.data.datasets[1].data;
             const principal = myChart.data.datasets[2].data;
             lockedData = profit.map((p, i) => p + principal[i]);
             alert('現在のプランを背景に固定しました。\n設定を変更して比較してみてください。');
             calculate();
         }
-        // ---------------
 
         function addHistory() {
             const age = Number(document.getElementById('histAge').value);
             const asset = Number(document.getElementById('histAsset').value);
             if (!age || !asset) return alert('年齢と資産額を入力してください');
-            
             const idx = actualHistory.findIndex(h => h.age === age);
             if (idx >= 0) actualHistory[idx] = { age, asset };
             else actualHistory.push({ age, asset });
-            
             actualHistory.sort((a,b) => a.age - b.age);
             updateHistoryList();
             calculate();
             saveState();
-            
             document.getElementById('histAge').value = '';
             document.getElementById('histAsset').value = '';
         }
@@ -371,16 +379,8 @@
 
         function updateHistoryList() {
             const list = document.getElementById('historyList');
-            if (actualHistory.length === 0) {
-                list.innerHTML = '<div class="text-center text-[10px] text-gray-500 py-2">実績データなし</div>';
-                return;
-            }
-            list.innerHTML = actualHistory.map((h, i) => `
-                <div class="history-item">
-                    <span class="text-gray-300 font-bold">${h.age}歳:</span>
-                    <span class="text-orange-400 font-bold">${h.asset.toLocaleString()}万</span>
-                    <button onclick="deleteHistory(${i})" class="text-red-500 hover:text-red-400">×</button>
-                </div>`).join('');
+            if (actualHistory.length === 0) { list.innerHTML = '<div class="text-center text-[10px] text-gray-500 py-2">実績データなし</div>'; return; }
+            list.innerHTML = actualHistory.map((h, i) => `<div class="history-item"><span class="text-gray-300 font-bold">${h.age}歳:</span><span class="text-orange-400 font-bold">${h.asset.toLocaleString()}万</span><button onclick="deleteHistory(${i})" class="text-red-500 hover:text-red-400">×</button></div>`).join('');
         }
 
         function saveState() {
@@ -458,9 +458,7 @@
                         alert('設定を読み込みました。');
                         loadState();
                         calculate();
-                    } else {
-                        alert('無効なファイル形式です。');
-                    }
+                    } else { alert('無効なファイル形式です。'); }
                 } catch (err) { alert('ファイルの読み込みに失敗しました。'); }
                 input.value = '';
             };
@@ -490,6 +488,75 @@
             document.getElementById('totalPercentDisplay').innerText = total;
             document.getElementById('totalProgressBar').style.width = Math.min(total, 100) + '%';
         }
+
+        // --- 追加チャート描画関数 (v6.0) ---
+        function updateSubCharts(ret, crash, pfData) {
+            // ポートフォリオ円グラフ
+            const ctxPf = document.getElementById('portfolioChart').getContext('2d');
+            const pfConfig = {
+                type: 'doughnut',
+                data: {
+                    labels: pfData.map(d => d.name),
+                    datasets: [{
+                        data: pfData.map(d => d.val),
+                        backgroundColor: pfData.map(d => d.color),
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw}%` } } },
+                    cutout: '70%'
+                }
+            };
+            if(pfChart) { pfChart.data = pfConfig.data; pfChart.update(); }
+            else { pfChart = new Chart(ctxPf, pfConfig); }
+
+            // リスク・リターンマップ
+            const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
+            const risk = (1 - crash) * 100; // 簡易的なリスク指標
+            const returnVal = ret * 100;
+            
+            // 比較用の点（他のアセットクラス）
+            const scatterData = [
+                { x: 0, y: 0, label: '現金', color: '#64748b' },
+                { x: 25, y: 5, label: 'オルカン', color: '#10b981' },
+                { x: 40, y: 10, label: 'S&P500', color: '#3b82f6' },
+                { x: 50, y: 13, label: 'NASDAQ', color: '#06b6d4' },
+                { x: 70, y: 30, label: '仮想通貨', color: '#8b5cf6' },
+                { x: risk, y: returnVal, label: 'あなた', color: '#facc15', r: 8 } // ユーザーの現在地
+            ];
+
+            const rrConfig = {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Assets',
+                        data: scatterData,
+                        backgroundColor: scatterData.map(d => d.color),
+                        pointRadius: scatterData.map(d => d.r || 4),
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => ` ${c.raw.label}` } }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'リスク(%)', color: '#64748b' }, grid: { color: '#334155' }, ticks: { color: '#64748b' }, min: 0, max: 80 },
+                        y: { title: { display: true, text: 'リターン(%)', color: '#64748b' }, grid: { color: '#334155' }, ticks: { color: '#64748b' }, min: 0, max: 35 }
+                    }
+                }
+            };
+            if(rrChart) { rrChart.data = rrConfig.data; rrChart.update(); }
+            else { rrChart = new Chart(ctxRr, rrConfig); }
+        }
+        // ------------------------------------
 
         function openChartModal() {
             document.getElementById('chartModal').style.display = 'flex';
@@ -529,16 +596,8 @@
 
         function renderAchievement(age, success) {
             const html = success 
-                ? `<div class="achievement-badge bg-gradient-to-r from-yellow-600/80 to-yellow-800/80 border border-yellow-500/50 p-4 rounded-xl text-center shadow-lg">
-                    <p class="text-xs text-yellow-200 font-bold mb-1">GOAL REACHED!</p>
-                    <p class="text-2xl font-black text-white text-glow-gold">🎉 ${age}歳でFIRE達成！</p>
-                   </div>`
-                : `<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl text-center shadow-lg">
-                    <p class="text-xs text-slate-400 font-bold mb-1">STATUS</p>
-                    <p class="text-lg font-bold text-slate-300">100歳までに目標未達...</p>
-                    <p class="text-[10px] text-slate-500 mt-1">積立額やリターンを見直してみよう</p>
-                   </div>`;
-            
+                ? `<div class="achievement-badge bg-gradient-to-r from-yellow-600/80 to-yellow-800/80 border border-yellow-500/50 p-4 rounded-xl text-center shadow-lg"><p class="text-xs text-yellow-200 font-bold mb-1">GOAL REACHED!</p><p class="text-2xl font-black text-white text-glow-gold">🎉 ${age}歳でFIRE達成！</p></div>`
+                : `<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl text-center shadow-lg"><p class="text-xs text-slate-400 font-bold mb-1">STATUS</p><p class="text-lg font-bold text-slate-300">100歳までに目標未達...</p><p class="text-[10px] text-slate-500 mt-1">積立額やリターンを見直してみよう</p></div>`;
             document.getElementById('achievementMobile').innerHTML = html;
             document.getElementById('achievementDesktop').innerHTML = html;
         }
@@ -561,18 +620,28 @@
             document.getElementById('inputAmountArea').classList.toggle('hidden', document.getElementById('withdrawType').value !== 'amount');
 
             let retC = 0, retF = 0, crashC = 0, crashF = 0, totalC = 0, totalF = 0;
+            let pfData = []; // チャート用データ
+
             ASSETS.forEach(a => {
-                totalC += parseInt(document.getElementById(`range_current_${a.key}`).value)||0;
-                totalF += parseInt(document.getElementById(`range_future_${a.key}`).value)||0;
+                const val = parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0;
+                if(activeTab === 'current') totalC += val; else totalF += val;
+                if(val > 0) pfData.push({ name: a.name, val: val, color: a.color });
             });
+
             ASSETS.forEach(a => {
-                if(totalC>0){ const w=parseInt(document.getElementById(`range_current_${a.key}`).value)/totalC; retC+=a.ret*w; crashC+=a.crash*w; }
-                if(totalF>0){ const w=parseInt(document.getElementById(`range_future_${a.key}`).value)/totalF; retF+=a.ret*w; crashF+=a.crash*w; }
+                if(totalC>0 && activeTab==='current'){ const w=parseInt(document.getElementById(`range_current_${a.key}`).value)/totalC; retC+=a.ret*w; crashC+=a.crash*w; }
+                if(totalF>0 && activeTab==='future'){ const w=parseInt(document.getElementById(`range_future_${a.key}`).value)/totalF; retF+=a.ret*w; crashF+=a.crash*w; }
             });
+
+            // チャート更新 (v6.0)
+            const currentRet = activeTab==='current' ? retC : retF;
+            const currentCrash = activeTab==='current' ? crashC : crashF;
+            updateSubCharts(currentRet, currentCrash, pfData);
 
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
 
+            // メイン計算（ロジックはv5.5と同じ）
             const futureInit = init * Math.pow(1+retC, 10);
             const futureAdd = (monthly * 12) * ((Math.pow(1+retF, 10)-1) / (retF || 0.0001));
             const total10 = futureInit + futureAdd;
@@ -584,16 +653,8 @@
             document.getElementById('specTotalRet').innerText = (finalRet * 100).toFixed(1);
             document.getElementById('specTotalCrash').innerText = (finalCrash > 0 ? -(1-finalCrash)*100 : 0).toFixed(1);
 
-            let historyAge = [age];
-            let historyPrincipal = [init/10000];
-            let historyProfit = [0];
-            
-            let currA = init; // 現在の資産額
-            let currAcc = 0;  // 積立分の資産額
-            let currPrincipal = init; // 元本総額
-            let peak = init;
-            let gradAge = null;
-            let reachedAge = null;
+            let historyAge = [age], historyPrincipal = [init/10000], historyProfit = [0];
+            let currA = init, currAcc = 0, currPrincipal = init, peak = init, gradAge = null, reachedAge = null;
 
             if (crashCount > 0) {
                 const key = `${age}-${crashCount}-${crashMode}`;
@@ -613,10 +674,7 @@
                 if(isCoast && currentTotal >= target && !gradAge) gradAge = age+i-1;
                 
                 let addAmount = 0;
-                if(age+i < wAge && !gradAge) {
-                    addAmount = monthly * 12;
-                    currPrincipal += addAmount;
-                }
+                if(age+i < wAge && !gradAge) { addAmount = monthly * 12; currPrincipal += addAmount; }
 
                 if(age+i < wAge){
                     currA *= isCr ? crashC : (1+retC);
@@ -624,23 +682,13 @@
                 } else {
                     let total = currA + currAcc;
                     let withdrawAmount = (document.getElementById('withdrawType').value==='rate' ? total*wRate : wAmt*12);
-                    if(total > 0) {
-                        let ratio = withdrawAmount / total;
-                        if(ratio > 1) ratio = 1;
-                        currPrincipal -= currPrincipal * ratio; 
-                    }
+                    if(total > 0) { let ratio = withdrawAmount / total; if(ratio > 1) ratio = 1; currPrincipal -= currPrincipal * ratio; }
                     total = Math.max(0, total - withdrawAmount);
                     total *= isCr ? (currA*crashC+currAcc*crashF)/(currA+currAcc||1) : (1+(currA*retC+currAcc*retF)/(currA+currAcc||1));
-                    currA = total * (currA/(currA+currAcc||1)); 
-                    currAcc = total - currA;
+                    currA = total * (currA/(currA+currAcc||1)); currAcc = total - currA;
                 }
-
-                const totalNow = currA + currAcc;
-                peak = Math.max(peak, totalNow);
-                
-                historyAge.push(age+i);
-                historyPrincipal.push(Math.round(currPrincipal/10000));
-                historyProfit.push(Math.round((totalNow - currPrincipal)/10000));
+                const totalNow = currA + currAcc; peak = Math.max(peak, totalNow);
+                historyAge.push(age+i); historyPrincipal.push(Math.round(currPrincipal/10000)); historyProfit.push(Math.round((totalNow - currPrincipal)/10000));
             }
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
@@ -649,7 +697,6 @@
             if(gradAge) document.getElementById('graduationAge').innerText = gradAge;
             renderAchievement(reachedAge, !!reachedAge);
 
-            // 乖離チェック
             if (actualHistory.length > 0) {
                 const latestHist = actualHistory[actualHistory.length - 1];
                 const simIndex = historyAge.indexOf(latestHist.age);
@@ -659,66 +706,27 @@
                     const sign = diff >= 0 ? '+' : '';
                     const color = diff >= 0 ? 'text-green-400' : 'text-red-400';
                     document.getElementById('gapDisplay').innerHTML = `計画比 <span class="${color}">${sign}${diff.toLocaleString()}万</span>`;
-                } else {
-                    document.getElementById('gapDisplay').innerText = '';
-                }
-            } else {
-                document.getElementById('gapDisplay').innerText = '';
-            }
+                } else { document.getElementById('gapDisplay').innerText = ''; }
+            } else { document.getElementById('gapDisplay').innerText = ''; }
 
             const actualData = historyAge.map(hAge => {
                 const hit = actualHistory.find(h => h.age === hAge);
                 return hit ? hit.asset : null;
             });
 
-            // グラフデータ構築
             const datasets = [
-                { 
-                    type: 'line', label: '実績', data: actualData, 
-                    borderColor: '#fb923c', backgroundColor: '#fb923c', 
-                    pointRadius: 4, pointHoverRadius: 6, borderWidth: 3, fill: false, tension: 0, order: 0 
-                },
-                { 
-                    type: 'line', label: '利益', data: historyProfit, 
-                    borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.6)', 
-                    fill: '-1', pointRadius: 0, borderWidth: 1, order: 2
-                },
-                { 
-                    type: 'line', label: '元本', data: historyPrincipal, 
-                    borderColor: '#64748b', backgroundColor: 'rgba(100, 116, 139, 0.5)', 
-                    fill: 'origin', pointRadius: 0, borderWidth: 1, order: 3
-                }
+                { type: 'line', label: '実績', data: actualData, borderColor: '#fb923c', backgroundColor: '#fb923c', pointRadius: 4, pointHoverRadius: 6, borderWidth: 3, fill: false, tension: 0, order: 0 },
+                { type: 'line', label: '利益', data: historyProfit, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.6)', fill: '-1', pointRadius: 0, borderWidth: 1, order: 2 },
+                { type: 'line', label: '元本', data: historyPrincipal, borderColor: '#64748b', backgroundColor: 'rgba(100, 116, 139, 0.5)', fill: 'origin', pointRadius: 0, borderWidth: 1, order: 3 }
             ];
-
-            // 比較用ロックデータがある場合
             if (lockedData) {
-                // lockedDataの長さがhistoryAgeと異なる場合の調整は簡易的に無視（再計算で長さ変わる可能性あるが、年齢軸が同じならOK）
-                datasets.push({
-                    type: 'line', label: '比較(前回)', data: lockedData,
-                    borderColor: 'rgba(255, 255, 255, 0.5)', borderDash: [5, 5], borderWidth: 2,
-                    pointRadius: 0, fill: false, order: 1
-                });
+                datasets.push({ type: 'line', label: '比較(前回)', data: lockedData, borderColor: 'rgba(255, 255, 255, 0.5)', borderDash: [5, 5], borderWidth: 2, pointRadius: 0, fill: false, order: 1 });
             }
 
             const chartData = { labels: historyAge, datasets: datasets };
-            
-            const chartOptions = { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: true, labels: { color: '#94a3b8' } }, tooltip: { mode: 'index', intersect: false } }, 
-                scales: { 
-                    x: { grid: { display: false }, ticks: { color: '#64748b', font: {size: 9} } }, 
-                    y: { stacked: false, grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: {size: 9} } } 
-                },
-                interaction: { mode: 'nearest', axis: 'x', intersect: false }
-            };
+            const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { color: '#94a3b8' } }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: {size: 9} } }, y: { stacked: false, grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: {size: 9} } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
 
-            if(myChart){ 
-                myChart.data = chartData; 
-                myChart.update(); 
-            } else { 
-                myChart = new Chart(document.getElementById('chartCanvas'), { type: 'line', data: chartData, options: chartOptions }); 
-            }
+            if(myChart){ myChart.data = chartData; myChart.update(); } else { myChart = new Chart(document.getElementById('chartCanvas'), { type: 'line', data: chartData, options: chartOptions }); }
         }
     </script>
 </body>
