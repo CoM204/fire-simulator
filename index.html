@@ -3,170 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>simulator8</title>
+    <title>FIRE Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; padding-bottom: 120px; }
-        .input-card { background-color: #1e293b; border: 1px solid #334155; }
-        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 24px; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; border-radius: 3px; background: #334155; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #fff; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); border: 2px solid #cbd5e1; }
-        .tab-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
-        .tab-inactive { background-color: #1e293b; color: #94a3b8; border-color: #475569; }
-        .sticky-result { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); border-top: 1px solid #334155; padding: 10px; z-index: 50; }
-        .num-input { background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; padding: 1px 4px; width: 45px; text-align: right; font-size: 11px; font-weight: bold; }
+        body { 
+            background-color: #0b0f19; 
+            color: #e2e8f0; 
+            font-family: 'Inter', 'Noto Sans JP', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            padding-bottom: 120px; 
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%);
+            background-attachment: fixed;
+        }
+        
+        .glass-card { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #f8fafc;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+            outline: none;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        @media (min-width: 1024px) {
+            .container-grid {
+                display: grid;
+                grid-template-columns: 350px 1fr;
+                gap: 24px;
+                max-width: 1200px;
+                margin: 0 auto;
+                align-items: start;
+            }
+            .chart-area { position: sticky; top: 20px; }
+            .sticky-result { position: static !important; background: transparent !important; border: none !important; backdrop-filter: none !important; padding: 0 !important; margin-top: 20px; }
+            .sticky-result .grid { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; }
+        }
+
+        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; box-shadow: 0 0 10px rgba(96, 165, 250, 0.5); border: 2px solid #1e293b; transition: transform 0.1s; }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
+
+        .tab-btn { transition: all 0.3s; position: relative; overflow: hidden; }
+        .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
+
+        .text-glow { text-shadow: 0 0 10px rgba(96, 165, 250, 0.5); }
+        .text-glow-red { text-shadow: 0 0 10px rgba(248, 113, 113, 0.5); }
+        .text-glow-gold { text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+
+        .sticky-result { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(11, 15, 25, 0.9); backdrop-filter: blur(16px); border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; z-index: 50; }
+        
+        #chartModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        #chartModal canvas { background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); width: 100% !important; height: auto !important; max-height: 70vh; }
+
+        .num-input-small { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; padding: 2px 6px; width: 45px; text-align: right; font-size: 11px; font-weight: bold; }
+        
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .achievement-badge { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+        .history-item:last-child { border-bottom: none; }
     </style>
 </head>
-<body class="p-4 max-w-md mx-auto">
+<body class="p-4">
 
-    <header class="mb-4 text-center">
-        <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500">simulator8</h1>
-        <p class="text-[10px] text-gray-400 font-bold">v3.7 記録機能・完全再構築</p>
+    <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
+        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight">FIRE Simulator <span class="text-xs text-gray-500 font-normal align-middle ml-1">v5.5</span></h1>
     </header>
 
-    <div class="input-card p-3 rounded-xl shadow-lg mb-4 space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">現在の年齢</label><div class="relative"><input type="number" id="currentAge" value="35" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">歳</span></div></div>
-            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">現在資産</label><div class="relative"><input type="number" id="initialAsset" value="1000" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
-            <div><label class="text-[10px] text-gray-400 block mb-0.5 font-bold">毎月積立</label><div class="relative"><input type="number" id="monthlyAdd" value="10" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-slate-600 rounded text-white font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
-            <div><label class="text-[10px] text-yellow-400 block mb-0.5 font-bold">目標金額</label><div class="relative"><input type="number" id="targetAsset" value="3000" step="100" oninput="calculate()" class="w-full p-1.5 bg-slate-800 border border-yellow-500/50 rounded text-yellow-100 font-bold text-center text-sm"><span class="absolute right-2 top-1.5 text-[10px] text-gray-500">万</span></div></div>
-        </div>
-        <div class="flex items-center justify-between bg-slate-700/30 p-2 rounded-lg border border-slate-600/50">
-            <div class="flex items-center gap-2">
-                <input type="checkbox" id="coastFireMode" onchange="calculate()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                <label for="coastFireMode" class="text-xs font-bold text-white cursor-pointer text-[10px]">目標達成で積立停止 (Coast FIRE)</label>
-            </div>
-            <div id="graduationAgeArea" class="hidden text-xs font-bold text-yellow-400">🎉 <span id="graduationAge">0</span>歳で卒業</div>
-        </div>
-    </div>
+    <div class="container-grid">
+        <div class="input-column">
+            
+            <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
-    <div class="mb-4">
-        <div class="input-card p-3 rounded-xl shadow-lg">
-            <h2 class="text-xs font-bold text-gray-300 mb-2 font-bold text-[10px]">⚙️ ポートフォリオ配分</h2>
-            <div class="flex gap-2 mb-3">
-                <button id="tabCurrent" onclick="switchTab('current')" class="flex-1 py-2 rounded-lg text-[10px] font-bold border tab-active transition">今の資産</button>
-                <button id="tabFuture" onclick="switchTab('future')" class="flex-1 py-2 rounded-lg text-[10px] font-bold border tab-inactive transition">これからの積立</button>
-            </div>
-            <div class="grid grid-cols-3 gap-2 mb-4">
-                <button onclick="applyPreset('defensive')" class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 text-[9px] py-2 rounded hover:bg-emerald-800/50 font-bold">🛡️ 鉄壁</button>
-                <button onclick="applyPreset('standard')" class="bg-blue-900/40 border border-blue-500/30 text-blue-200 text-[9px] py-2 rounded hover:bg-blue-800/50 font-bold">👑 王道</button>
-                <button onclick="applyPreset('aggressive')" class="bg-purple-900/40 border border-purple-500/30 text-purple-200 text-[9px] py-2 rounded hover:bg-purple-800/50 font-bold">🚀 爆益</button>
-            </div>
-            <div class="mb-3 bg-slate-900 rounded-full h-5 relative overflow-hidden border border-slate-700">
-                <div id="totalProgressBar" class="h-full bg-blue-500 transition-all duration-300" style="width: 100%"></div>
-                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] font-bold">合計: <span id="totalPercentDisplay">100</span>%</div>
-            </div>
-            <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-2"></div></div>
-            <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-2"></div></div>
-            <div class="mt-4 pt-3 border-t border-slate-600 grid grid-cols-2 gap-2 text-center text-xs">
-                <div class="bg-slate-800/50 p-1 rounded">
-                    <p class="text-[9px] text-gray-400 font-bold">現在のポートフォリオ</p>
-                    <p class="text-blue-300 font-bold text-[10px]">年利: <span id="tabRetCurrent">0.0</span>%</p>
-                    <p class="text-red-400 font-bold text-[10px]">リスク: <span id="tabCrashCurrent">0.0</span>%</p>
+            <div class="glass-card p-3 mb-5 border-slate-500/30">
+                <div class="flex items-center mb-2">
+                    <div class="w-1 h-4 bg-slate-400 rounded-full mr-2"></div>
+                    <h2 class="text-xs font-bold text-slate-300 tracking-wider">DATA & COMPARE</h2>
                 </div>
-                <div class="bg-slate-800/50 p-1 rounded">
-                    <p class="text-[9px] text-gray-400 font-bold">これからの積立</p>
-                    <p class="text-green-300 font-bold text-[10px]">年利: <span id="tabRetFuture">0.0</span>%</p>
-                    <p class="text-red-400 font-bold text-[10px]">リスク: <span id="tabCrashFuture">0.0</span>%</p>
+                <button onclick="lockComparison()" class="w-full bg-indigo-600/80 hover:bg-indigo-500 text-white text-[10px] font-bold py-2 rounded border border-indigo-400/50 mb-2 transition shadow-lg flex justify-center items-center gap-1">
+                    📌 現在のプランを比較用に固定
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="exportSettings()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold py-2 rounded border border-slate-500/50 transition flex justify-center items-center gap-1">💾 保存</button>
+                    <button onclick="triggerImport()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold py-2 rounded border border-slate-500/50 transition flex justify-center items-center gap-1">📂 読込</button>
+                    <input type="file" id="importFile" style="display: none;" onchange="importSettings(this)">
                 </div>
             </div>
-        </div>
-        <div class="mt-2 pt-2">
-            <div class="bg-slate-800 p-3 rounded-lg border border-indigo-500/50 text-center shadow-lg">
-                <p class="text-[10px] text-indigo-300 mb-1 font-bold">資産全体の総合スペック (10年後目安)</p>
-                <div class="flex justify-center items-center gap-6">
-                    <div><p class="text-[9px] text-gray-400 font-bold">期待リターン</p><p class="text-3xl font-bold text-white"><span id="specTotalRet">0.0</span>%</p></div>
-                    <div class="h-10 w-px bg-slate-600"></div>
-                    <div><p class="text-[9px] text-red-300 font-bold">暴落時ダメージ</p><p class="text-3xl font-bold text-red-400"><span id="specTotalCrash">0.0</span>%</p></div>
+
+            <div class="glass-card p-4 mb-5 border-orange-500/20 bg-orange-900/10">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center">
+                        <div class="w-1 h-4 bg-orange-500 rounded-full mr-2"></div>
+                        <h2 class="text-xs font-bold text-orange-300 tracking-wider">ACTUAL HISTORY</h2>
+                    </div>
+                    <div id="gapDisplay" class="text-xs font-bold text-gray-400"></div>
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <input type="number" id="histAge" placeholder="年齢" class="glass-input w-1/3 p-2 text-center text-xs font-bold">
+                    <input type="number" id="histAsset" placeholder="資産額(万)" class="glass-input w-full p-2 text-center text-xs font-bold">
+                    <button onclick="addHistory()" class="bg-orange-600 hover:bg-orange-500 text-white px-3 rounded font-bold text-xs">追加</button>
+                </div>
+                <div id="historyList" class="bg-slate-900/50 rounded-lg max-h-[100px] overflow-y-auto p-2 border border-slate-700/50">
+                    <div class="text-center text-[10px] text-gray-500 py-2">実績データなし</div>
                 </div>
             </div>
+
+            <div class="glass-card p-4 mb-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-1 h-4 bg-blue-500 rounded-full mr-2"></div>
+                    <h2 class="text-xs font-bold text-blue-300 tracking-wider">PROFILE</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div><label class="text-[10px] text-gray-400 block mb-1">現在の年齢</label><div class="relative"><input type="number" id="currentAge" value="35" oninput="calculate()" class="glass-input w-full p-2 text-center text-sm font-bold"><span class="absolute right-3 top-2 text-[10px] text-gray-500">歳</span></div></div>
+                    <div><label class="text-[10px] text-gray-400 block mb-1">現在資産</label><div class="relative"><input type="number" id="initialAsset" value="1000" oninput="calculate()" class="glass-input w-full p-2 text-center text-sm font-bold"><span class="absolute right-3 top-2 text-[10px] text-gray-500">万</span></div></div>
+                    <div><label class="text-[10px] text-gray-400 block mb-1">毎月積立</label><div class="relative"><input type="number" id="monthlyAdd" value="10" oninput="calculate()" class="glass-input w-full p-2 text-center text-sm font-bold"><span class="absolute right-3 top-2 text-[10px] text-gray-500">万</span></div></div>
+                    <div><label class="text-[10px] text-yellow-500/80 block mb-1 font-bold">目標金額</label><div class="relative"><input type="number" id="targetAsset" value="3000" step="100" oninput="calculate()" class="glass-input w-full p-2 text-center text-sm font-bold border-yellow-500/30 text-yellow-100"><span class="absolute right-3 top-2 text-[10px] text-gray-500">万</span></div></div>
+                </div>
+                <div class="bg-blue-900/20 p-2 rounded-lg border border-blue-500/20 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="coastFireMode" onchange="calculate()" class="w-4 h-4 text-blue-500 rounded bg-slate-800 border-slate-600 focus:ring-blue-500 focus:ring-offset-slate-900">
+                        <label for="coastFireMode" class="text-[10px] font-bold text-blue-200 cursor-pointer">目標達成で積立停止 (Coast FIRE)</label>
+                    </div>
+                    <div id="graduationAgeArea" class="hidden"><span class="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-bold">🎉 <span id="graduationAge">0</span>歳で卒業</span></div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 mb-5">
+                <div class="flex items-center mb-4">
+                    <div class="w-1 h-4 bg-purple-500 rounded-full mr-2"></div>
+                    <h2 class="text-xs font-bold text-purple-300 tracking-wider">PORTFOLIO</h2>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    <button id="tabCurrent" onclick="switchTab('current')" class="flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-active">今の資産</button>
+                    <button id="tabFuture" onclick="switchTab('future')" class="flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-inactive">これからの積立</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-5">
+                    <button onclick="applyPreset('defensive')" class="bg-emerald-900/30 border border-emerald-500/30 text-emerald-400 text-[10px] py-2 rounded hover:bg-emerald-900/50 transition">🛡️ 鉄壁</button>
+                    <button onclick="applyPreset('standard')" class="bg-blue-900/30 border border-blue-500/30 text-blue-400 text-[10px] py-2 rounded hover:bg-blue-900/50 transition">👑 王道</button>
+                    <button onclick="applyPreset('aggressive')" class="bg-purple-900/30 border border-purple-500/30 text-purple-400 text-[10px] py-2 rounded hover:bg-purple-900/50 transition">🚀 爆益</button>
+                </div>
+                <div class="mb-5 bg-slate-800/50 rounded-full h-4 relative overflow-hidden border border-slate-700/50">
+                    <div id="totalProgressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" style="width: 100%"></div>
+                    <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[9px] font-bold text-white drop-shadow-md">合計: <span id="totalPercentDisplay">100</span>%</div>
+                </div>
+                <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
+                <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
+                <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
+                        <p class="text-[9px] text-gray-500 font-bold mb-1">現在のPF</p>
+                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400 text-glow"><span id="tabRetCurrent">0.0</span>%</span></div>
+                    </div>
+                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
+                        <p class="text-[9px] text-gray-500 font-bold mb-1">積立PF</p>
+                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400 text-glow"><span id="tabRetFuture">0.0</span>%</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 mb-5 border-indigo-500/20 bg-indigo-900/10">
+                <div class="flex items-center mb-3">
+                    <div class="w-1 h-4 bg-indigo-500 rounded-full mr-2"></div>
+                    <h2 class="text-xs font-bold text-indigo-300 tracking-wider">EXIT STRATEGY</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div><label class="text-[10px] text-gray-400 block mb-1">開始年齢</label><input type="number" id="withdrawAge" value="60" oninput="calculate()" class="glass-input w-full p-2 text-center text-sm font-bold"></div>
+                    <div><label class="text-[10px] text-gray-400 block mb-1">方法</label><select id="withdrawType" onchange="calculate()" class="glass-input w-full p-2 text-center text-xs font-bold h-[38px]"><option value="rate">定率 (％)</option><option value="amount">定額 (万円)</option></select></div>
+                </div>
+                <div id="inputRateArea" class="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-300">毎年引き出す割合 (%)</label><input type="number" id="num_withdrawRate" value="4.0" step="0.1" oninput="syncRange('withdrawRateRange', this.value)" class="num-input-small"></div>
+                    <input type="range" id="withdrawRateRange" min="0" max="10" step="0.1" value="4.0" class="w-full" oninput="syncNum('num_withdrawRate', this.value)">
+                </div>
+                <div id="inputAmountArea" class="hidden bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-300">毎月引き出す金額 (万)</label><input type="number" id="num_withdrawAmt" value="20" oninput="syncRange('withdrawAmountRange', this.value)" class="num-input-small"></div>
+                    <input type="range" id="withdrawAmountRange" min="0" max="100" step="1" value="20" class="w-full" oninput="syncNum('num_withdrawAmt', this.value)">
+                </div>
+            </div>
+
+            <div class="glass-card p-4 mb-5 border-red-500/20 bg-red-900/10">
+                <div class="flex items-center mb-3">
+                    <div class="w-1 h-4 bg-red-500 rounded-full mr-2"></div>
+                    <h2 class="text-xs font-bold text-red-300 tracking-wider">MARKET CRASH</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <select id="crashCount" onchange="calculate()" class="glass-input w-full p-2 text-xs font-bold text-center"><option value="0">暴落なし</option><option value="2">2回発生</option><option value="5" selected>5回発生</option><option value="8">8回発生</option></select>
+                    <div class="flex gap-1"><select id="crashTimingMode" onchange="calculate()" class="glass-input w-full p-2 text-xs font-bold text-center flex-1"><option value="random">ランダム</option><option value="early">序盤集中</option><option value="late">終盤集中</option></select><button onclick="rerollCrash()" class="glass-input px-3 text-lg hover:bg-slate-700 transition">🎲</button></div>
+                </div>
+            </div>
+            
+            <div class="space-y-3 mb-10 lg:mb-0">
+                <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/20 font-bold text-xs hover:opacity-90 transition">SBI証券 口座開設はこちら（PR）</a>
+                <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg border border-emerald-400/20 font-bold text-xs hover:opacity-90 transition">三井住友カード（NL）を作る（PR）</a>
+            </div>
+        </div>
+
+        <div class="result-column chart-area">
+            
+            <div id="achievementDesktop" class="hidden lg:block mb-6"></div>
+
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
+                <div class="flex gap-2">
+                    <button onclick="downloadChart()" class="bg-slate-800/80 border border-slate-600/50 px-2 py-1 rounded text-[9px] font-bold text-gray-300 hover:bg-slate-700 transition flex items-center gap-1">📥 保存</button>
+                    <button onclick="shareViaEmail()" class="bg-blue-900/40 border border-blue-500/30 px-2 py-1 rounded text-[9px] font-bold text-blue-200 hover:bg-blue-900/60 transition flex items-center gap-1">✉️ 共有</button>
+                </div>
+            </div>
+            <div class="glass-card p-2 mb-5 cursor-zoom-in relative h-[320px] lg:h-[400px] transition hover:border-slate-500/50" onclick="openChartModal()">
+                <canvas id="chartCanvas"></canvas>
+            </div>
+
+            <div class="mb-5">
+                <div class="glass-card p-5 relative overflow-hidden border-indigo-500/30">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                    <p class="text-[10px] text-indigo-300 mb-3 font-bold text-center tracking-widest">ASSET SPEC (10 YEARS)</p>
+                    <div class="flex justify-center items-center gap-8">
+                        <div class="text-center">
+                            <p class="text-[9px] text-gray-400 mb-1">期待リターン</p>
+                            <p class="text-3xl font-black text-white text-glow"><span id="specTotalRet">0.0</span><span class="text-sm text-gray-500 ml-1">%</span></p>
+                        </div>
+                        <div class="h-8 w-px bg-slate-600"></div>
+                        <div class="text-center">
+                            <p class="text-[9px] text-red-400/80 mb-1">最大リスク</p>
+                            <p class="text-3xl font-black text-red-500 text-glow-red"><span id="specTotalCrash">0.0</span><span class="text-sm text-gray-500 ml-1">%</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-result">
+                <div class="max-w-md mx-auto lg:max-w-none grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <p class="text-[9px] text-gray-500 font-bold mb-0.5">資産ピーク</p>
+                        <p class="text-xl font-black text-yellow-400 text-glow"><span id="resPeakAsset">0</span><span class="text-xs text-gray-500 ml-1 font-normal">万</span></p>
+                    </div>
+                    <div class="border-l border-slate-700 pl-4">
+                        <p class="text-[9px] text-gray-500 font-bold mb-0.5">100歳時点</p>
+                        <p class="text-base font-bold text-gray-200"><span id="resEndAsset">0</span><span class="text-xs text-gray-500 ml-1 font-normal">万</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="text-center text-[10px] text-gray-600 border-t border-slate-800 pt-6 pb-20 lg:pb-6">
+                <div class="flex justify-center gap-4 mb-2"><a href="privacy.html" class="hover:text-gray-400 transition">運営者情報</a><a href="privacy.html" class="hover:text-gray-400 transition">プライバシーポリシー</a></div>
+                <p>&copy; 2026 simulator8</p>
+            </footer>
         </div>
     </div>
 
-    <div class="input-card p-4 rounded-xl shadow-lg mb-4 bg-gradient-to-br from-slate-900 to-slate-800 border-indigo-500/30">
-        <h2 class="text-sm font-bold text-indigo-300 mb-3 flex items-center font-bold text-[12px]"><span class="text-xl mr-2">🚪</span> 出口戦略</h2>
-        <div class="grid grid-cols-2 gap-4 mb-4">
-            <div><label class="text-[10px] text-gray-400 block mb-1 font-bold">開始年齢</label><input type="number" id="withdrawAge" value="60" oninput="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white font-bold text-center"></div>
-            <div><label class="text-[10px] text-gray-400 block mb-1 font-bold">方法</label><select id="withdrawType" onchange="calculate()" class="w-full p-2 bg-slate-900 border border-indigo-500/50 rounded text-white font-bold text-center text-xs h-[42px]"><option value="rate">定率 (％)</option><option value="amount">定額 (万円)</option></select></div>
+    <div id="chartModal">
+        <div class="w-full max-w-lg flex justify-between items-center mb-4 px-2">
+            <span class="text-[10px] text-gray-400 font-bold tracking-widest">FULL SCREEN CHART</span>
+            <button onclick="closeChartModal()" class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-red-500/30 transition">✕ 閉じる</button>
         </div>
-        <div id="inputRateArea" class="block bg-indigo-900/20 rounded-xl p-3 border border-indigo-500/30">
-            <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-200 text-[10px]">毎年引き出す割合 (%)</label><input type="number" id="num_withdrawRate" value="4.0" step="0.1" oninput="syncRange('withdrawRateRange', this.value)" class="num-input"></div>
-            <input type="range" id="withdrawRateRange" min="0" max="10" step="0.1" value="4.0" class="w-full" oninput="syncNum('num_withdrawRate', this.value)">
-        </div>
-        <div id="inputAmountArea" class="hidden bg-indigo-900/20 rounded-xl p-3 border border-indigo-500/30">
-            <div class="flex justify-between items-center mb-2"><label class="text-xs font-bold text-indigo-200 text-[10px]">毎月引き出す金額 (万)</label><input type="number" id="num_withdrawAmt" value="20" oninput="syncRange('withdrawAmountRange', this.value)" class="num-input"></div>
-            <input type="range" id="withdrawAmountRange" min="0" max="100" step="1" value="20" class="w-full" oninput="syncNum('num_withdrawAmt', this.value)">
-        </div>
+        <canvas id="modalChartCanvas" onclick="event.stopPropagation()"></canvas>
     </div>
-
-    <div class="input-card p-3 rounded-xl shadow-lg mb-4 bg-red-900/10 border-red-900/30">
-        <h2 class="text-xs font-bold text-red-300 mb-2 font-bold text-[10px]">📉 暴落設定</h2>
-        <div class="grid grid-cols-2 gap-2">
-            <select id="crashCount" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs font-bold text-center"><option value="0">なし</option><option value="2">2回</option><option value="5" selected>5回</option><option value="8">8回</option></select>
-            <div class="flex gap-1"><select id="crashTimingMode" onchange="calculate()" class="w-full p-2 bg-slate-800 rounded border border-red-900/50 text-white text-xs font-bold text-center flex-1"><option value="random">ランダム</option><option value="early">序盤集中</option><option value="late">終盤集中</option></select><button onclick="rerollCrash()" class="bg-slate-700 px-3 rounded text-lg">🎲</button></div>
-        </div>
-    </div>
-
-    <div class="bg-white/5 p-2 rounded-xl border border-white/10 mb-4 relative h-[300px]"><canvas id="chartCanvas"></canvas></div>
-
-    <div class="space-y-2 mb-8">
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-center text-white shadow-lg border border-blue-400/30 font-bold text-xs">SBI証券 口座開設はこちら（PR）</a>
-        <a href="https://www.a8.net/" target="_blank" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-center text-white shadow-lg border border-emerald-400/30 font-bold text-xs">三井住友カード（NL）を作る（PR）</a>
-    </div>
-
-    <footer class="text-center text-[10px] text-gray-500 border-t border-slate-800 pt-4 pb-20">
-        <div class="flex justify-center gap-4 mb-2"><a href="privacy.html" class="underline">運営者情報</a><a href="privacy.html" class="underline">プライバシーポリシー</a></div>
-        <p>&copy; 2026 simulator8</p>
-    </footer>
-
-    <div class="sticky-result"><div class="max-w-md mx-auto grid grid-cols-2 gap-4 text-center"><div><p class="text-[9px] text-gray-400 font-bold">資産ピーク</p><p class="text-lg font-bold text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs">万</span></p></div><div><p class="text-[9px] text-gray-400 font-bold">100歳時点</p><p class="text-sm font-bold text-white"><span id="resEndAsset">0</span><span class="text-xs">万</span></p></div></div></div>
 
     <script>
         const STORAGE_KEY = 'simulatorState_v37';
         const ASSETS = [
-            { key: 'cash', name: '💴 現金', desc: '日本円', ret: 0.00, crash: 1.00, color: '#94a3b8', defC: 50, defF: 0 },
-            { key: 'bond', name: '📜 債券', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#14b8a6', defC: 0, defF: 0 },
-            { key: 'gold', name: '🥇 金',   desc: '安全資産', ret: 0.04, crash: 0.85, color: '#eab308', defC: 0, defF: 0 },
-            { key: 'reit', name: '🏢 不動産', desc: 'REIT', ret: 0.045, crash: 0.75, color: '#a16207', defC: 0, defF: 0 },
+            { key: 'cash', name: '💴 現金', desc: '日本円', ret: 0.00, crash: 1.00, color: '#64748b', defC: 50, defF: 0 },
+            { key: 'bond', name: '📜 債券', desc: '米国債等', ret: 0.03, crash: 0.95, color: '#2dd4bf', defC: 0, defF: 0 },
+            { key: 'gold', name: '🥇 金',   desc: '安全資産', ret: 0.04, crash: 0.85, color: '#fbbf24', defC: 0, defF: 0 },
+            { key: 'reit', name: '🏢 不動産', desc: 'REIT', ret: 0.045, crash: 0.75, color: '#a855f7', defC: 0, defF: 0 },
             { key: 'orkan', name: '🛡️ オルカン', desc: '全世界株', ret: 0.05, crash: 0.75, color: '#10b981', defC: 50, defF: 50 },
             { key: 'sp500', name: '⚔️ S&P500', desc: '米国TOP500', ret: 0.10, crash: 0.60, color: '#3b82f6', defC: 0, defF: 30 },
-            { key: 'nasdaq', name: '💻 NASDAQ100', desc: 'ハイテク株', ret: 0.13, crash: 0.50, color: '#06b6d4', defC: 0, defF: 20 },
-            { key: 'fang', name: '💎 FANG+', desc: '超大型IT', ret: 0.17, crash: 0.45, color: '#f97316', defC: 0, defF: 0 },
-            { key: 'cyc', name: '🔥 景気敏感株', desc: '半導体・自動車', ret: 0.15, crash: 0.45, color: '#ef4444', defC: 0, defF: 0 },
-            { key: 'def', name: '🛡️ ディフェンシブ株', desc: '電力・薬品等', ret: 0.06, crash: 0.75, color: '#84cc16', defC: 0, defF: 0 },
-            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等', ret: 0.30, crash: 0.30, color: '#6366f1', defC: 0, defF: 0 },
-            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQ×2', ret: 0.25, crash: 0.25, color: '#a855f7', defC: 0, defF: 0 }
+            { key: 'nasdaq', name: '💻 NASDAQ', desc: 'ハイテク株', ret: 0.13, crash: 0.50, color: '#06b6d4', defC: 0, defF: 20 },
+            { key: 'fang', name: '💎 FANG+', desc: '超大型IT', ret: 0.17, crash: 0.45, color: '#f472b6', defC: 0, defF: 0 },
+            { key: 'cyc', name: '🔥 景気敏感', desc: '半導体等', ret: 0.15, crash: 0.45, color: '#ef4444', defC: 0, defF: 0 },
+            { key: 'def', name: '🛡️ ディフェン', desc: '電力・薬品', ret: 0.06, crash: 0.75, color: '#84cc16', defC: 0, defF: 0 },
+            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等', ret: 0.30, crash: 0.30, color: '#8b5cf6', defC: 0, defF: 0 },
+            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQ×2', ret: 0.25, crash: 0.25, color: '#ec4899', defC: 0, defF: 0 }
         ];
 
-        let activeTab = 'current'; let myChart = null; let memoCrashYears = []; let memoCrashKey = '';
+        let activeTab = 'current'; let myChart = null; let modalChart = null; let memoCrashYears = []; let memoCrashKey = '';
+        let actualHistory = [];
+        let lockedData = null; // 比較用ロックデータ
 
-        window.onload = () => {
-            renderSliders('current');
-            renderSliders('future');
-            loadState(); 
-            calculate();
-        };
+        window.onload = () => { renderSliders('current'); renderSliders('future'); loadState(); calculate(); };
 
         function switchTab(tab) {
             activeTab = tab;
             document.getElementById('containerCurrent').classList.toggle('hidden', tab !== 'current');
             document.getElementById('containerFuture').classList.toggle('hidden', tab !== 'future');
-            document.getElementById('tabCurrent').className = tab === 'current' ? 'flex-1 py-2 rounded-lg text-[10px] font-bold border tab-active' : 'flex-1 py-2 rounded-lg text-[10px] font-bold border tab-inactive';
-            document.getElementById('tabFuture').className = tab === 'future' ? 'flex-1 py-2 rounded-lg text-[10px] font-bold border tab-active' : 'flex-1 py-2 rounded-lg text-[10px] font-bold border tab-inactive';
+            document.getElementById('tabCurrent').className = tab === 'current' ? 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-active' : 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-inactive';
+            document.getElementById('tabFuture').className = tab === 'future' ? 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-active' : 'flex-1 py-2 rounded-lg text-[11px] font-bold tab-btn tab-inactive';
             updateTotalBar();
         }
 
         function renderSliders(type) {
             const container = document.getElementById(type === 'current' ? 'slidersCurrent' : 'slidersFuture');
             container.innerHTML = ASSETS.map(a => `
-                <div class="bg-slate-700/20 rounded-lg p-2 border border-slate-600/30">
+                <div class="bg-slate-800/40 rounded-lg p-2 border border-slate-700/50">
                     <div class="flex justify-between items-center mb-1">
                         <div class="flex flex-col overflow-hidden">
                             <span style="color:${a.color}" class="font-bold text-[10px] truncate">${a.name}</span>
-                            <span class="text-[8px] text-gray-400 truncate font-bold">${a.desc}</span>
+                            <span class="text-[8px] text-gray-500 truncate font-bold">${a.desc}</span>
                         </div>
-                        <input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" oninput="syncRange('range_${type}_${a.key}', this.value)" class="num-input flex-shrink-0 ml-1">
+                        <input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" oninput="syncRange('range_${type}_${a.key}', this.value)" class="num-input-small">
                     </div>
                     <input type="range" id="range_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" class="w-full mt-0.5" oninput="syncNum('num_${type}_${a.key}', this.value)">
                 </div>`).join('');
@@ -177,6 +330,57 @@
             const clamped = Math.max(0, Math.min(100, val));
             document.getElementById(rangeId).value = clamped; 
             calculate(); 
+        }
+
+        // --- 比較機能 ---
+        function lockComparison() {
+            if(!myChart || !myChart.data.datasets[1]) return;
+            // 現在の「利益+元本」の合計推移をコピーして保存
+            const profit = myChart.data.datasets[1].data;
+            const principal = myChart.data.datasets[2].data;
+            lockedData = profit.map((p, i) => p + principal[i]);
+            alert('現在のプランを背景に固定しました。\n設定を変更して比較してみてください。');
+            calculate();
+        }
+        // ---------------
+
+        function addHistory() {
+            const age = Number(document.getElementById('histAge').value);
+            const asset = Number(document.getElementById('histAsset').value);
+            if (!age || !asset) return alert('年齢と資産額を入力してください');
+            
+            const idx = actualHistory.findIndex(h => h.age === age);
+            if (idx >= 0) actualHistory[idx] = { age, asset };
+            else actualHistory.push({ age, asset });
+            
+            actualHistory.sort((a,b) => a.age - b.age);
+            updateHistoryList();
+            calculate();
+            saveState();
+            
+            document.getElementById('histAge').value = '';
+            document.getElementById('histAsset').value = '';
+        }
+
+        function deleteHistory(index) {
+            actualHistory.splice(index, 1);
+            updateHistoryList();
+            calculate();
+            saveState();
+        }
+
+        function updateHistoryList() {
+            const list = document.getElementById('historyList');
+            if (actualHistory.length === 0) {
+                list.innerHTML = '<div class="text-center text-[10px] text-gray-500 py-2">実績データなし</div>';
+                return;
+            }
+            list.innerHTML = actualHistory.map((h, i) => `
+                <div class="history-item">
+                    <span class="text-gray-300 font-bold">${h.age}歳:</span>
+                    <span class="text-orange-400 font-bold">${h.asset.toLocaleString()}万</span>
+                    <button onclick="deleteHistory(${i})" class="text-red-500 hover:text-red-400">×</button>
+                </div>`).join('');
         }
 
         function saveState() {
@@ -192,7 +396,8 @@
                 num_withdrawAmt: document.getElementById('num_withdrawAmt').value,
                 crashCount: document.getElementById('crashCount').value,
                 crashTimingMode: document.getElementById('crashTimingMode').value,
-                portfolio: {}
+                portfolio: {},
+                actualHistory: actualHistory
             };
             ASSETS.forEach(a => {
                 state.portfolio[`current_${a.key}`] = document.getElementById(`range_current_${a.key}`).value;
@@ -216,12 +421,50 @@
                         });
                     } else if(key === 'coastFireMode') {
                         document.getElementById(key).checked = state[key];
+                    } else if(key === 'actualHistory') {
+                        actualHistory = state[key] || [];
+                        updateHistoryList();
                     } else {
                         const el = document.getElementById(key);
                         if(el) el.value = state[key];
                     }
                 });
             } catch (e) {}
+        }
+
+        function exportSettings() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if(!saved) { alert('保存するデータがありません。'); return; }
+            const blob = new Blob([saved], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `simulator_settings_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerImport() { document.getElementById('importFile').click(); }
+
+        function importSettings(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (json.currentAge && json.portfolio) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
+                        alert('設定を読み込みました。');
+                        loadState();
+                        calculate();
+                    } else {
+                        alert('無効なファイル形式です。');
+                    }
+                } catch (err) { alert('ファイルの読み込みに失敗しました。'); }
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
 
         function rerollCrash() { memoCrashYears = []; calculate(); }
@@ -246,6 +489,58 @@
             ASSETS.forEach(a => total += parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value) || 0);
             document.getElementById('totalPercentDisplay').innerText = total;
             document.getElementById('totalProgressBar').style.width = Math.min(total, 100) + '%';
+        }
+
+        function openChartModal() {
+            document.getElementById('chartModal').style.display = 'flex';
+            if(modalChart) modalChart.destroy();
+            const ctx = document.getElementById('modalChartCanvas').getContext('2d');
+            modalChart = new Chart(ctx, { 
+                type: 'line', 
+                data: JSON.parse(JSON.stringify(myChart.data)), 
+                options: { 
+                    responsive: true, 
+                    plugins: { legend: { display: true, position: 'top', labels: { color: '#94a3b8', font: {size: 10} } } },
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { 
+                        y: { stacked: false, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, 
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+                    }
+                } 
+            });
+        }
+        function closeChartModal() { document.getElementById('chartModal').style.display = 'none'; }
+        
+        function downloadChart() {
+            const link = document.createElement('a');
+            link.download = `simulation_${new Date().getTime()}.png`;
+            link.href = document.getElementById('chartCanvas').toDataURL('image/png');
+            link.click();
+        }
+
+        function shareViaEmail() {
+            const peak = document.getElementById('resPeakAsset').innerText;
+            const end = document.getElementById('resEndAsset').innerText;
+            const ret = document.getElementById('specTotalRet').innerText;
+            const subject = encodeURIComponent("シミュレーション結果の共有 - simulator8");
+            const body = encodeURIComponent(`シミュレーション結果:\n・期待リターン: ${ret}%\n・資産ピーク: ${peak}万円\n・100歳時点: ${end}万円\n\n詳細は画像を添付して共有してください。`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function renderAchievement(age, success) {
+            const html = success 
+                ? `<div class="achievement-badge bg-gradient-to-r from-yellow-600/80 to-yellow-800/80 border border-yellow-500/50 p-4 rounded-xl text-center shadow-lg">
+                    <p class="text-xs text-yellow-200 font-bold mb-1">GOAL REACHED!</p>
+                    <p class="text-2xl font-black text-white text-glow-gold">🎉 ${age}歳でFIRE達成！</p>
+                   </div>`
+                : `<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl text-center shadow-lg">
+                    <p class="text-xs text-slate-400 font-bold mb-1">STATUS</p>
+                    <p class="text-lg font-bold text-slate-300">100歳までに目標未達...</p>
+                    <p class="text-[10px] text-slate-500 mt-1">積立額やリターンを見直してみよう</p>
+                   </div>`;
+            
+            document.getElementById('achievementMobile').innerHTML = html;
+            document.getElementById('achievementDesktop').innerHTML = html;
         }
 
         function calculate() {
@@ -276,9 +571,7 @@
             });
 
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
-            document.getElementById('tabCrashCurrent').innerText = (crashC > 0 ? -(1-crashC)*100 : 0).toFixed(1);
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
-            document.getElementById('tabCrashFuture').innerText = (crashF > 0 ? -(1-crashF)*100 : 0).toFixed(1);
 
             const futureInit = init * Math.pow(1+retC, 10);
             const futureAdd = (monthly * 12) * ((Math.pow(1+retF, 10)-1) / (retF || 0.0001));
@@ -291,7 +584,17 @@
             document.getElementById('specTotalRet').innerText = (finalRet * 100).toFixed(1);
             document.getElementById('specTotalCrash').innerText = (finalCrash > 0 ? -(1-finalCrash)*100 : 0).toFixed(1);
 
-            let historyAge = [age], historyAsset = [init/10000], currA = init, currAcc = 0, peak = init, gradAge = null;
+            let historyAge = [age];
+            let historyPrincipal = [init/10000];
+            let historyProfit = [0];
+            
+            let currA = init; // 現在の資産額
+            let currAcc = 0;  // 積立分の資産額
+            let currPrincipal = init; // 元本総額
+            let peak = init;
+            let gradAge = null;
+            let reachedAge = null;
+
             if (crashCount > 0) {
                 const key = `${age}-${crashCount}-${crashMode}`;
                 if (memoCrashKey !== key || memoCrashYears.length === 0) {
@@ -302,27 +605,120 @@
                     memoCrashYears = arr.slice(0, crashCount); memoCrashKey = key;
                 }
             }
+
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
-                if(isCoast && (currA+currAcc) >= target && !gradAge) gradAge = age+i-1;
+                const currentTotal = currA + currAcc;
+                if (currentTotal >= target && !reachedAge) reachedAge = age + i - 1;
+                if(isCoast && currentTotal >= target && !gradAge) gradAge = age+i-1;
+                
+                let addAmount = 0;
+                if(age+i < wAge && !gradAge) {
+                    addAmount = monthly * 12;
+                    currPrincipal += addAmount;
+                }
+
                 if(age+i < wAge){
                     currA *= isCr ? crashC : (1+retC);
-                    currAcc = (currAcc + (gradAge?0:monthly*12)) * (isCr ? crashF : (1+retF));
+                    currAcc = (currAcc + addAmount) * (isCr ? crashF : (1+retF));
                 } else {
                     let total = currA + currAcc;
-                    total = Math.max(0, total - (document.getElementById('withdrawType').value==='rate'?total*wRate:wAmt*12));
+                    let withdrawAmount = (document.getElementById('withdrawType').value==='rate' ? total*wRate : wAmt*12);
+                    if(total > 0) {
+                        let ratio = withdrawAmount / total;
+                        if(ratio > 1) ratio = 1;
+                        currPrincipal -= currPrincipal * ratio; 
+                    }
+                    total = Math.max(0, total - withdrawAmount);
                     total *= isCr ? (currA*crashC+currAcc*crashF)/(currA+currAcc||1) : (1+(currA*retC+currAcc*retF)/(currA+currAcc||1));
-                    currA = total * (currA/(currA+currAcc||1)); currAcc = total - currA;
+                    currA = total * (currA/(currA+currAcc||1)); 
+                    currAcc = total - currA;
                 }
-                const totalNow = currA+currAcc; peak = Math.max(peak, totalNow);
-                historyAge.push(age+i); historyAsset.push(Math.round(totalNow/10000));
+
+                const totalNow = currA + currAcc;
+                peak = Math.max(peak, totalNow);
+                
+                historyAge.push(age+i);
+                historyPrincipal.push(Math.round(currPrincipal/10000));
+                historyProfit.push(Math.round((totalNow - currPrincipal)/10000));
             }
+
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
-            document.getElementById('resEndAsset').innerText = historyAsset[historyAsset.length-1].toLocaleString();
+            document.getElementById('resEndAsset').innerText = (historyPrincipal[historyPrincipal.length-1] + historyProfit[historyProfit.length-1]).toLocaleString();
             document.getElementById('graduationAgeArea').classList.toggle('hidden', !gradAge);
             if(gradAge) document.getElementById('graduationAge').innerText = gradAge;
-            if(myChart){ myChart.data.labels = historyAge; myChart.data.datasets[0].data = historyAsset; myChart.update(); }
-            else { myChart = new Chart(document.getElementById('chartCanvas'), { type: 'line', data: { labels: historyAge, datasets: [{ data: historyAsset, borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#334155' } } } } }); }
+            renderAchievement(reachedAge, !!reachedAge);
+
+            // 乖離チェック
+            if (actualHistory.length > 0) {
+                const latestHist = actualHistory[actualHistory.length - 1];
+                const simIndex = historyAge.indexOf(latestHist.age);
+                if (simIndex >= 0) {
+                    const simVal = historyPrincipal[simIndex] + historyProfit[simIndex];
+                    const diff = latestHist.asset - simVal;
+                    const sign = diff >= 0 ? '+' : '';
+                    const color = diff >= 0 ? 'text-green-400' : 'text-red-400';
+                    document.getElementById('gapDisplay').innerHTML = `計画比 <span class="${color}">${sign}${diff.toLocaleString()}万</span>`;
+                } else {
+                    document.getElementById('gapDisplay').innerText = '';
+                }
+            } else {
+                document.getElementById('gapDisplay').innerText = '';
+            }
+
+            const actualData = historyAge.map(hAge => {
+                const hit = actualHistory.find(h => h.age === hAge);
+                return hit ? hit.asset : null;
+            });
+
+            // グラフデータ構築
+            const datasets = [
+                { 
+                    type: 'line', label: '実績', data: actualData, 
+                    borderColor: '#fb923c', backgroundColor: '#fb923c', 
+                    pointRadius: 4, pointHoverRadius: 6, borderWidth: 3, fill: false, tension: 0, order: 0 
+                },
+                { 
+                    type: 'line', label: '利益', data: historyProfit, 
+                    borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.6)', 
+                    fill: '-1', pointRadius: 0, borderWidth: 1, order: 2
+                },
+                { 
+                    type: 'line', label: '元本', data: historyPrincipal, 
+                    borderColor: '#64748b', backgroundColor: 'rgba(100, 116, 139, 0.5)', 
+                    fill: 'origin', pointRadius: 0, borderWidth: 1, order: 3
+                }
+            ];
+
+            // 比較用ロックデータがある場合
+            if (lockedData) {
+                // lockedDataの長さがhistoryAgeと異なる場合の調整は簡易的に無視（再計算で長さ変わる可能性あるが、年齢軸が同じならOK）
+                datasets.push({
+                    type: 'line', label: '比較(前回)', data: lockedData,
+                    borderColor: 'rgba(255, 255, 255, 0.5)', borderDash: [5, 5], borderWidth: 2,
+                    pointRadius: 0, fill: false, order: 1
+                });
+            }
+
+            const chartData = { labels: historyAge, datasets: datasets };
+            
+            const chartOptions = { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: true, labels: { color: '#94a3b8' } }, tooltip: { mode: 'index', intersect: false } }, 
+                scales: { 
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: {size: 9} } }, 
+                    y: { stacked: false, grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: {size: 9} } } 
+                },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            };
+
+            if(myChart){ 
+                myChart.data = chartData; 
+                myChart.update(); 
+            } else { 
+                myChart = new Chart(document.getElementById('chartCanvas'), { type: 'line', data: chartData, options: chartOptions }); 
+            }
         }
     </script>
 </body>
