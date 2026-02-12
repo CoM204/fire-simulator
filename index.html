@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v6.7</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>FIRE Simulator v6.8</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -41,7 +41,7 @@
 <body class="p-4">
 
     <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
-        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight">FIRE Simulator <span class="text-xs text-gray-500 font-normal align-middle ml-1">v6.7</span></h1>
+        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight">FIRE Simulator <span class="text-xs text-gray-500 font-normal align-middle ml-1">v6.8</span></h1>
     </header>
 
     <div class="container-grid">
@@ -91,28 +91,17 @@
                 <div class="mb-5 bg-slate-800/50 rounded-full h-4 relative overflow-hidden border border-slate-700/50"><div id="totalProgressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" style="width: 100%"></div></div>
                 <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
                 <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
-                <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
-                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
-                        <p class="text-[9px] text-gray-500 font-bold mb-1">現在のPF</p>
-                        <div class="flex justify-between px-1 items-baseline mb-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400 text-glow"><span id="tabRetCurrent">0.0</span>%</span></div>
-                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400 text-glow-red"><span id="tabRiskCurrent">0.0</span>%</span></div>
-                    </div>
-                    <div class="bg-slate-800/40 p-2 rounded-lg border border-slate-700/50">
-                        <p class="text-[9px] text-gray-500 font-bold mb-1">積立PF</p>
-                        <div class="flex justify-between px-1 items-baseline mb-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400 text-glow"><span id="tabRetFuture">0.0</span>%</span></div>
-                        <div class="flex justify-between px-1 items-baseline"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400 text-glow-red"><span id="tabRiskFuture">0.0</span>%</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-5">
-                <div class="glass-card p-5 relative overflow-hidden border-indigo-500/30">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-                    <p class="text-[10px] text-indigo-300 mb-3 font-bold text-center tracking-widest">ASSET SPEC (10 YEARS)</p>
-                    <div class="flex justify-center items-center gap-8">
-                        <div class="text-center"><p class="text-[9px] text-gray-400 mb-1">期待リターン</p><p class="text-3xl font-black text-white text-glow"><span id="specTotalRet">0.0</span><span class="text-sm text-gray-500 ml-1">%</span></p></div>
-                        <div class="h-8 w-px bg-slate-600"></div>
-                        <div class="text-center"><p class="text-[9px] text-red-400/80 mb-1">最大リスク</p><p class="text-3xl font-black text-red-500 text-glow-red"><span id="specTotalCrash">0.0</span><span class="text-sm text-gray-500 ml-1">%</span></p></div>
+                <div class="mt-5 glass-card p-3 border-indigo-500/30">
+                    <div class="flex justify-center items-center gap-4 text-center">
+                        <div>
+                            <p class="text-[9px] text-gray-400 mb-0.5">期待リターン</p>
+                            <p class="text-lg font-black text-white text-glow"><span id="specTotalRet">0.0</span><span class="text-xs ml-0.5">%</span></p>
+                        </div>
+                        <div class="h-6 w-px bg-slate-600"></div>
+                        <div>
+                            <p class="text-[9px] text-red-400/80 mb-0.5">最大リスク</p>
+                            <p class="text-lg font-black text-red-500 text-glow-red"><span id="specTotalCrash">0.0</span><span class="text-xs ml-0.5">%</span></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -241,7 +230,7 @@
 
         function syncNum(numId, val) { document.getElementById(numId).value = val; calculate(); }
         function syncRange(rangeId, val) { const clamped = Math.max(0, Math.min(100, val)); document.getElementById(rangeId).value = clamped; calculate(); }
-        function lockComparison() { if(myChart && myChart.data.datasets[2]) { const total = myChart.data.datasets[2].data; lockedData = [...total]; alert('プランを固定しました'); calculate(); } }
+        function lockComparison() { if(myChart && myChart.data.datasets.length >= 3) { const totalSet = myChart.data.datasets.find(d => d.label === '資産総額'); if(totalSet) { lockedData = [...totalSet.data]; alert('プランを固定しました'); calculate(); } } }
 
         function addHistory() {
             const age = Number(document.getElementById('histAge').value);
@@ -329,12 +318,8 @@
 
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1); document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
             const riskValC = crashC > 0 ? -(1-crashC)*100 : 0; const riskValF = crashF > 0 ? -(1-crashF)*100 : 0;
-            document.getElementById('tabRiskCurrent').innerText = riskValC.toFixed(1); document.getElementById('tabRiskFuture').innerText = riskValF.toFixed(1);
-
-            const fInit = init * Math.pow(1+retC,10); const fAdd = (monthly*12)*((Math.pow(1+retF,10)-1)/(retF||0.0001)); const t10 = fInit+fAdd;
-            document.getElementById('specTotalRet').innerText = t10>0 ? ((retC*fInit+retF*fAdd)/t10*100).toFixed(1) : '0.0';
-            const fCrash = (crashC*fInit+crashF*fAdd)/t10;
-            document.getElementById('specTotalCrash').innerText = t10>0 ? (-(1-fCrash)*100).toFixed(1) : '0.0';
+            document.getElementById('specTotalRet').innerText = ((retC+retF)/2 * 100).toFixed(1); // 簡易表示
+            document.getElementById('specTotalCrash').innerText = riskValC.toFixed(1); // 簡易表示
 
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000];
             let cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
@@ -352,9 +337,8 @@
 
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
-                const currentTotal = cA+cAcc;
-                if (currentTotal >= target && !reachedAge) reachedAge = age + i - 1;
-                if(isCoast && currentTotal >= target && !gradAge) gAge = age+i-1;
+                if((cA+cAcc)>=target && !rAge) rAge=age+i-1;
+                if(isCoast && (cA+cAcc)>=target && !gAge) gAge=age+i-1;
                 let add=0; if(age+i<wAge && !gAge) { add=monthly*12; cP+=add; }
                 if(age+i<wAge) { cA*=isCr?crashC:(1+retC); cAcc=(cAcc+add)*(isCr?crashF:(1+retF)); }
                 else {
@@ -372,32 +356,33 @@
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
             document.getElementById('graduationAgeArea').classList.toggle('hidden', !gAge);
             if(gAge) document.getElementById('graduationAge').innerText=gAge;
-            renderAchievement(reachedAge, !!reachedAge);
+            renderAchievement(rAge, !!rAge);
 
             if(actualHistory.length>0){
                 const last = actualHistory[actualHistory.length-1];
                 const sIdx = hAge.indexOf(last.age);
                 if(sIdx>=0) {
                     const diff = last.asset - hTotal[sIdx];
-                    const sign = diff >= 0 ? '+' : '';
-                    const color = diff >= 0 ? 'text-green-400' : 'text-red-400';
-                    document.getElementById('gapDisplay').innerHTML = `計画比 <span class="${color}">${sign}${diff.toLocaleString()}万</span>`;
+                    document.getElementById('gapDisplay').innerHTML = `計画比 <span class="${diff>=0?'text-green-400':'text-red-400'}">${diff>=0?'+':''}${diff.toLocaleString()}万</span>`;
                 } else document.getElementById('gapDisplay').innerText='';
             } else document.getElementById('gapDisplay').innerText='';
 
             const actualData = hAge.map(h => { const hit=actualHistory.find(a=>a.age===h); return hit?hit.asset:null; });
             
             const datasets = [
+                { type:'line', label:'資産総額', data:hTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59, 130, 246, 0.6)', fill:true, pointRadius:0, borderWidth:2, order:3 },
+                { type:'line', label:'元本', data:hPrin, borderColor:'#64748b', backgroundColor:'rgba(15, 23, 42, 0.8)', fill:true, pointRadius:0, borderWidth:1, order:2 },
                 { type:'line', label:'実績', data:actualData, borderColor:'#fb923c', backgroundColor:'#fb923c', pointRadius:4, borderWidth:3, fill:false, order:0 },
-                { type:'line', label:'比較(前回)', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1, hidden:!lockedData },
-                { type:'line', label:'元本', data:hPrin, borderColor:'#64748b', backgroundColor:'rgba(15, 23, 42, 0.8)', fill:'origin', pointRadius:0, borderWidth:1, order:2 },
-                { type:'line', label:'資産総額', data:hTotal, borderColor:'#3b82f6', backgroundColor:'rgba(59, 130, 246, 0.6)', fill:'origin', pointRadius:0, borderWidth:2, order:3 }
             ];
+            
+            if(lockedData) {
+                datasets.push({ type:'line', label:'比較(前回)', data:lockedData, borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:1 });
+            }
 
             if(myChart) myChart.destroy();
             myChart = new Chart(document.getElementById('chartCanvas').getContext('2d'), {
                 type:'line', data:{labels:hAge, datasets:datasets},
-                options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{grid:{display:false},ticks:{color:'#64748b'}},y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, interaction:{mode:'index',axis:'x',intersect:false} }
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8'}}}, scales:{x:{grid:{display:false},ticks:{color:'#64748b'}},y:{grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, interaction:{mode:'index',axis:'x',intersect:false} }
             });
         }
     </script>
