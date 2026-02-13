@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v43.0 - No Overlap & Scrollable</title>
+    <title>FIRE Simulator v44.0 - Fix Overlap Final</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -15,14 +15,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* ベーススタイル */
         body { 
             background-color: #0b0f19; 
             color: #e2e8f0; 
             font-family: 'Inter', 'Noto Sans JP', sans-serif; 
             background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
             background-attachment: fixed; 
-            /* 【重要】高さ固定を廃止し、ページ全体のスクロールを許可 */
+            /* ページ全体のスクロール設定 */
             min-height: 100vh;
             margin: 0;
             overflow-y: auto; 
@@ -33,11 +32,9 @@
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
         
-        /* モーダル */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
         .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
         
-        /* スライダー */
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; border: 2px solid #1e293b; }
@@ -48,29 +45,27 @@
         
         header { padding: 1rem 2rem; }
 
-        /* PC用レイアウト (Gridで左右分割するが、高さはコンテンツ依存) */
+        /* PC用レイアウト */
         @media (min-width: 1024px) {
             .container-grid { 
                 display: grid; 
                 grid-template-columns: 500px 1fr; /* 左500px固定 */
-                gap: 40px; /* 左右の間隔を広めに */
-                padding: 0 40px 60px 40px; 
+                gap: 40px; 
+                padding: 0 40px 40px 40px; 
                 max-width: 1600px; 
                 margin: 0 auto;
-                align-items: start; /* 上揃えで配置 */
+                align-items: start;
             }
             .input-column {
-                /* 個別スクロール廃止 */
+                /* 自然な高さ */
                 height: auto;
-                overflow: visible;
             }
+            /* 右カラム修正: 重なり防止のため Flex Column + Gap を使用 */
             .result-column {
-                /* 個別スクロール廃止 */
                 height: auto;
-                overflow: visible;
                 display: flex;
                 flex-direction: column;
-                gap: 30px; /* 縦方向の要素間隔を30px確保（重なり防止） */
+                gap: 24px; /* 要素間を確実に24px空ける */
             }
         }
 
@@ -80,35 +75,58 @@
             .input-column { margin-bottom: 40px; }
             .mobile-chart-only { display: block; margin-bottom: 30px; }
             .pc-only { display: none !important; }
-            .result-column { display: none; } /* モバイルでは右カラム（PC用）を隠す */
+            .result-column { display: none; } 
         }
 
-        /* 共通チャートスタイル */
-        .header-area { margin-bottom: 10px; }
+        /* チャートエリア設定 */
         
+        /* 1. メインチャート */
         .main-chart-container { 
             position: relative; 
             width: 100%; 
-            height: 400px; /* チャート高さ */
+            height: 450px; /* 固定高さ */
+            width: 100%;
+            /* マージン削除 (gapで制御) */
+            margin: 0;
         }
 
+        /* 2. サブチャートコンテナ (円グラフ・棒グラフ) */
         .sub-charts-container { 
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            height: 240px; 
+            /* 高さ固定を廃止し、中身に合わせて伸びるように変更 */
+            height: auto; 
+            min-height: 250px;
+            width: 100%;
+            margin: 0;
+        }
+        
+        /* サブチャート個別のカード */
+        .sub-charts-container .glass-card {
+            height: 250px; /* カードの高さを確保 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .result-summary-card { width: 100%; }
+        /* 3. 結果要約カード */
+        .result-summary-card { 
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            /* 重なり防止の念押し */
+            position: relative; 
+            z-index: 10;
+        }
 
         .mobile-chart-only { display: none; }
         @media (max-width: 1023px) {
             .mobile-chart-only { display: block; }
-            .sub-charts-container { grid-template-columns: 1fr; height: auto; }
-            .sub-charts-container > div { height: 200px; margin-bottom: 20px; }
+            .sub-charts-container { grid-template-columns: 1fr; }
         }
 
-        /* スクロールバー（念のため残すが、基本はブラウザ標準スクロール） */
+        /* スクロールバー */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -117,7 +135,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v43.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v44.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -250,9 +268,9 @@
 
         <!-- 右カラム：結果・グラフ (PC用) -->
         <div class="result-column pc-only">
-            <div id="achievementDesktop" class="header-area hidden lg:block mb-4"></div>
+            <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
-            <div class="header-area flex justify-between items-center mb-2 px-1">
+            <div class="flex justify-between items-center px-1">
                 <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
                 <div class="flex gap-2">
                     <button onclick="resetChartZoom()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-bold flex items-center gap-1">🔄 リセット</button>
@@ -260,28 +278,28 @@
                 </div>
             </div>
             
-            <!-- メインチャート -->
+            <!-- メインチャート (要素1) -->
             <div class="glass-card p-2 main-chart-container">
                 <canvas id="chartCanvas"></canvas>
             </div>
 
-            <!-- サブチャートエリア -->
+            <!-- サブチャートエリア (要素2: 高さ自動調整) -->
             <div class="sub-charts-container">
-                <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
+                <div class="glass-card p-2 text-center relative">
                     <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
-                    <div class="flex-1 flex justify-center items-center pt-4">
-                        <div style="width: 80%; height: 100%;"><canvas id="portfolioChart"></canvas></div>
+                    <div class="flex-1 flex justify-center items-center pt-4 h-full">
+                        <div style="width: 80%; height: 80%;"><canvas id="portfolioChart"></canvas></div>
                     </div>
                 </div>
-                <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
+                <div class="glass-card p-2 text-center relative">
                     <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">RISK SCENARIO <span id="riskLabelType" class="text-blue-400"></span></p>
-                    <div class="flex-1 flex justify-center items-center pt-4">
-                        <div style="width: 100%; height: 100%;"><canvas id="riskReturnChart"></canvas></div>
+                    <div class="flex-1 flex justify-center items-center pt-4 h-full">
+                        <div style="width: 100%; height: 80%;"><canvas id="riskReturnChart"></canvas></div>
                     </div>
                 </div>
             </div>
             
-            <!-- 結果要約 (PC用) -->
+            <!-- 結果要約 (要素3: 分離配置) -->
             <div class="result-summary-card glass-card p-4">
                 <div class="grid grid-cols-2 gap-4 text-center">
                     <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
@@ -307,8 +325,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v43';
-        const CONFIG_KEY = 'simulatorConfig_v43';
+        const STORAGE_KEY = 'simulatorState_v44';
+        const CONFIG_KEY = 'simulatorConfig_v44';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -562,7 +580,6 @@
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
                 
-                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
