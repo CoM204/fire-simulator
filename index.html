@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v22.0 - Stable Chart</title>
+    <title>FIRE Simulator v29.0 - Layout & Position Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -15,7 +15,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Inter', 'Noto Sans JP', sans-serif; background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); background-attachment: fixed; overflow-x: hidden; }
+        body { 
+            background-color: #0b0f19; 
+            color: #e2e8f0; 
+            font-family: 'Inter', 'Noto Sans JP', sans-serif; 
+            background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
+            background-attachment: fixed; 
+            overflow: hidden; /* 全体のスクロールはコンテナ側で制御 */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
@@ -29,29 +39,82 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        @media (min-width: 1024px) {
-            body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-            header { flex: 0 0 auto; padding: 1rem 2rem; }
-            .container-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; flex: 1; width: 100%; height: 100%; overflow: hidden; padding: 0 20px 20px 20px; max-width: none; margin: 0; }
-            .input-column { overflow-y: auto; height: 100%; padding-right: 10px; padding-bottom: 50px; }
-            .result-column { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-            .chart-wrapper-flex { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-            /* メインチャートは高さを確保 */
-            .main-chart-container { flex: 1; position: relative; width: 100%; min-height: 250px; }
-            /* サブチャートは高さを固定してバランスを取る */
-            .sub-charts-container { height: 220px; flex: 0 0 auto; }
-            .sticky-result { position: static !important; background: transparent !important; border: none !important; padding: 0 !important; margin-top: 10px; flex: 0 0 auto; }
-            .mobile-chart-only { display: none; }
-            .input-column::-webkit-scrollbar { width: 8px; }
-            .input-column::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
-            .input-column::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
+        header { flex: 0 0 auto; padding: 1rem 2rem; }
+
+        /* メインググリッド設定 */
+        .container-grid { 
+            display: grid; 
+            grid-template-columns: 450px 1fr; /* 左固定・右可変 */
+            gap: 24px; 
+            flex: 1; 
+            overflow: hidden; 
+            padding: 0 20px 0 20px; 
+            max-width: none; 
+            margin: 0; 
         }
+
+        /* 左カラム */
+        .input-column { 
+            overflow-y: auto; 
+            height: 100%; 
+            padding-right: 10px; 
+            padding-bottom: 50px; 
+        }
+
+        /* 右カラム */
+        .result-column { 
+            overflow-y: auto; /* ここでスクロールさせる */
+            height: 100%; 
+            padding-right: 10px;
+            padding-bottom: 100px; /* 下部に十分な余白 */
+            display: block; /* Flexをやめて単純な積み上げにする */
+        }
+
+        /* グラフエリアの高さ設定 */
+        .main-chart-container { 
+            position: relative; 
+            width: 100%; 
+            height: 380px; /* 固定高さ */
+            margin-bottom: 24px;
+        }
+
+        .sub-charts-container { 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            height: 220px; /* 固定高さ */
+            margin-bottom: 24px; 
+        }
+
+        .sticky-result { 
+            /* 重なり防止のため position: static */
+            position: static !important; 
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* モバイル対応 */
+        .mobile-chart-only { display: none; }
+        @media (max-width: 1024px) {
+            body { height: auto; overflow: auto; display: block; }
+            .container-grid { display: block; padding: 16px; height: auto; overflow: visible; }
+            .input-column, .result-column { height: auto; overflow: visible; padding-bottom: 20px; }
+            .mobile-chart-only { display: block; }
+            .main-chart-container { display: none; } /* PC用チャートは隠す */
+            .sub-charts-container { grid-template-columns: 1fr; height: auto; }
+            .sub-charts-container > div { height: 200px; margin-bottom: 10px; }
+        }
+
+        /* スクロールバー装飾 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v22.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v29.0</span></h1>
     </header>
 
     <div class="lg:hidden p-4 mobile-chart-only">
@@ -74,7 +137,7 @@
                     <div><label class="text-[10px] text-yellow-500 block mb-1">目標金額 (万)</label><input type="number" id="targetAsset" value="3000" class="glass-input border-yellow-500/30 text-yellow-100"></div>
                 </div>
                 <div class="bg-blue-900/20 p-2 rounded-lg flex items-center gap-2">
-                    <input type="checkbox" id="coastFireMode" class="w-4 h-4"><label for="coastFireMode" class="text-[10px] font-bold text-blue-200 cursor-pointer">目標達成で積立停止</label>
+                    <input type="checkbox" id="coastFireMode" class="w-4 h-4" onchange="calculate(false)"><label for="coastFireMode" class="text-[10px] font-bold text-blue-200 cursor-pointer">目標達成で積立停止</label>
                 </div>
                 <div id="graduationAgeArea" class="hidden mt-2 text-center"><span class="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-[10px] font-bold">🎉 <span id="graduationAge">0</span>歳で卒業</span></div>
             </div>
@@ -166,45 +229,43 @@
         </div>
 
         <!-- 右カラム：結果・グラフ -->
-        <div class="result-column chart-area">
+        <div class="result-column">
             <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
-            <div class="chart-wrapper-flex">
-                <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
-                    <div class="flex gap-2">
-                        <button onclick="resetChartZoom()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-bold flex items-center gap-1">🔄 リセット</button>
-                        <button onclick="downloadChart()" class="bg-slate-800 text-gray-300 px-2 py-1 rounded text-[10px]">画像保存</button>
-                    </div>
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
+                <div class="flex gap-2">
+                    <button onclick="resetChartZoom()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-bold flex items-center gap-1">🔄 リセット</button>
+                    <button onclick="downloadChart()" class="bg-slate-800 text-gray-300 px-2 py-1 rounded text-[10px]">画像保存</button>
                 </div>
-                
-                <!-- メインチャート -->
-                <div class="glass-card p-2 mb-4 main-chart-container hidden lg:block">
-                    <canvas id="chartCanvas"></canvas>
-                </div>
+            </div>
+            
+            <!-- メインチャート -->
+            <div class="glass-card p-2 mb-4 main-chart-container hidden lg:block">
+                <canvas id="chartCanvas"></canvas>
+            </div>
 
-                <!-- サブチャートエリア (横並び固定) -->
-                <div class="sub-charts-container grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
-                        <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
-                        <div class="flex-1 flex justify-center items-center pt-4">
-                            <div style="width: 80%; height: 100%;"><canvas id="portfolioChart"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
-                        <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">RISK SCENARIO <span id="riskLabelType" class="text-blue-400"></span></p>
-                        <div class="flex-1 flex justify-center items-center pt-4">
-                            <div style="width: 100%; height: 100%;"><canvas id="riskReturnChart"></canvas></div>
-                        </div>
+            <!-- サブチャートエリア -->
+            <div class="sub-charts-container">
+                <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
+                    <div class="flex-1 flex justify-center items-center pt-4">
+                        <div style="width: 80%; height: 100%;"><canvas id="portfolioChart"></canvas></div>
                     </div>
                 </div>
-                
-                <div class="sticky-result">
-                    <div class="glass-card p-4">
-                        <div class="grid grid-cols-2 gap-4 text-center">
-                            <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
-                            <div class="border-l border-slate-700"><p class="text-[9px] text-gray-500 mb-0.5">100歳時点</p><p class="text-xl font-bold text-gray-200"><span id="resEndAsset">0</span><span class="text-xs ml-1">万</span></p></div>
-                        </div>
+                <div class="glass-card p-2 text-center h-full flex flex-col justify-center relative">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">RISK SCENARIO <span id="riskLabelType" class="text-blue-400"></span></p>
+                    <div class="flex-1 flex justify-center items-center pt-4">
+                        <div style="width: 100%; height: 100%;"><canvas id="riskReturnChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sticky-result">
+                <div class="glass-card p-4">
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
+                        <div class="border-l border-slate-700"><p class="text-[9px] text-gray-500 mb-0.5">100歳時点</p><p class="text-xl font-bold text-gray-200"><span id="resEndAsset">0</span><span class="text-xs ml-1">万</span></p></div>
                     </div>
                 </div>
             </div>
@@ -227,8 +288,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v22';
-        const CONFIG_KEY = 'simulatorConfig_v22';
+        const STORAGE_KEY = 'simulatorState_v29';
+        const CONFIG_KEY = 'simulatorConfig_v29';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -250,6 +311,7 @@
         let visibleAssets = {}; 
         let myChart = null, myChartMobile = null, pfChart = null, rrChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
+        let graduationIndex = null; 
 
         window.onload = () => {
             loadConfig();
@@ -257,8 +319,8 @@
             
             document.querySelectorAll('input, select').forEach(el => {
                 if(el.id.startsWith('amt_')) return;
-                if(el.type === 'checkbox') return; 
-                el.addEventListener(el.type==='range'?'input':'change', () => calculate(false));
+                if(el.type === 'checkbox' && el.id !== 'coastFireMode') return; 
+                if(el.type !== 'checkbox') el.addEventListener(el.type==='range'?'input':'change', () => calculate(false));
             });
             
             loadState();
@@ -308,10 +370,7 @@
             renderUI(); closeConfigModal(); setInputMode(inputMode); calculate(false);
         }
 
-        // --- Chart Zoom Reset ---
-        function resetChartZoom() {
-            if(myChart) myChart.resetZoom();
-        }
+        function resetChartZoom() { if(myChart) myChart.resetZoom(); }
 
         function setInputMode(mode) {
             inputMode = mode;
@@ -387,7 +446,13 @@
             document.getElementById('specTotalCrash').innerText = (-(1-(crashC+crashF)/2)*100).toFixed(1);
 
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
-            
+            graduationIndex = null; 
+
+            if (init >= target) {
+                rAge = age;
+                graduationIndex = 0;
+            }
+
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -401,25 +466,52 @@
 
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
-                if((cA+cAcc)>=target && !rAge) rAge=age+i-1;
-                if(document.getElementById('coastFireMode').checked && (cA+cAcc)>=target && !gAge) gAge=age+i-1;
-                let add=0; if(age+i<wAge && !gAge) { add=monthly*12; cP+=add; }
-                if(age+i<wAge) { cA*=isCr?crashC:(1+retC); cAcc=(cAcc+add)*(isCr?crashF:(1+retF)); } 
-                else {
-                    let tot=cA+cAcc; let wAmt = tot * wRate;
-                    if(tot>0){ let r=wAmt/tot; if(r>1)r=1; cP-=cP*r; }
-                    tot=Math.max(0, tot-wAmt);
-                    tot*=isCr?(cA*crashC+cAcc*crashF)/(cA+cAcc||1):(1+(cA*retC+cAcc*retF)/(cA+cAcc||1));
-                    cA=tot*(cA/(cA+cAcc||1)); cAcc=tot-cA;
+                
+                let add = 0;
+                if(age+i < wAge) {
+                    if(!document.getElementById('coastFireMode').checked) {
+                        add = monthly * 12;
+                    } else if (!gAge) {
+                        add = monthly * 12;
+                    }
                 }
-                const now=cA+cAcc; peak=Math.max(peak,now); hAge.push(age+i); hPrin.push(Math.round(cP/10000)); hTotal.push(Math.round(now/10000));
+                
+                cP += add;
+
+                if(age+i < wAge) { 
+                    cA *= isCr ? crashC : (1+retC); 
+                    cAcc = (cAcc + add) * (isCr ? crashF : (1+retF)); 
+                } else {
+                    let tot = cA + cAcc; 
+                    let wAmt = tot * wRate;
+                    if(tot>0){ let r=wAmt/tot; if(r>1)r=1; cP-=cP*r; }
+                    tot = Math.max(0, tot - wAmt);
+                    let blendedRet = (cA*retC + cAcc*retF) / (cA+cAcc||1);
+                    let blendedCrash = (cA*crashC + cAcc*crashF) / (cA+cAcc||1);
+                    tot *= isCr ? blendedCrash : (1+blendedRet);
+                    cA = tot * (cA/(cA+cAcc||1)); 
+                    cAcc = tot - cA;
+                }
+
+                const now = cA + cAcc; 
+                peak = Math.max(peak, now); 
+                hAge.push(age+i); 
+                hPrin.push(Math.round(cP/10000)); 
+                hTotal.push(Math.round(now/10000));
+
+                if(now >= target && !rAge) {
+                    rAge = age + i;
+                    graduationIndex = i; 
+                }
+                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) {
+                    gAge = age + i;
+                }
             }
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
             renderAchievement(rAge);
             
-            // Only redraw main chart if skipMainChart is false
             if (!skipMainChart) {
                 drawMainChart(hAge, hTotal, hPrin);
             }
@@ -442,8 +534,6 @@
             document.getElementById('riskLabelType').innerText = suffix;
             if(inputMode === 'amount') { document.getElementById('initialAsset').disabled = t === 'current'; document.getElementById('monthlyAdd').disabled = t === 'future'; syncPercentToAmounts(); }
             updateTotalBar(); 
-            
-            // Pass true to skip main chart redraw
             calculate(true); 
         }
 
@@ -458,6 +548,38 @@
             calculate(false); 
         }
 
+        const targetLinePlugin = {
+            id: 'targetLine',
+            afterDatasetsDraw(chart, args, options) {
+                if (graduationIndex === null) return;
+                const { ctx, chartArea: { top, bottom } } = chart;
+                
+                // データセットのメタデータから描画済みの点の座標を直接取得する
+                // これにより、ラベルの値が数値であってもインデックス位置ズレが起きない
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data[graduationIndex]) return; // データが存在しない場合は描画しない
+
+                const xPos = meta.data[graduationIndex].x;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#facc15'; // yellow-400
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(xPos, top);
+                ctx.lineTo(xPos, bottom);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#facc15';
+                ctx.font = 'bold 12px Inter';
+                ctx.textAlign = 'left';
+                // インデックスから年齢を取得して表示
+                const ageLabel = chart.data.labels[graduationIndex];
+                ctx.fillText(`🚩 ${ageLabel}歳で達成`, xPos + 5, top + 20);
+                ctx.restore();
+            }
+        };
+
         function drawMainChart(labels, dTotal, dPrin) {
             if(!document.getElementById('chartCanvas')) return;
             const config = {
@@ -465,40 +587,37 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { 
-                            label:'元本', data:dPrin, borderColor:'#94a3b8', backgroundColor:'rgba(148, 163, 184, 0.2)', 
-                            fill:'origin', pointRadius:0, borderWidth:2, order:1 
-                        },
-                        { 
-                            label:'資産総額 (含み益)', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(16, 185, 129, 0.3)', 
-                            fill:0, /* Fill to Dataset 0 (Principal) */ pointRadius:0, borderWidth:2, order:0 
-                        },
-                        { 
-                            label:'比較', data:lockedData || [], borderColor:'rgba(255,255,255,0.5)', 
-                            borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData 
-                        }
+                        { label:'元本', data:dPrin, borderColor:'#94a3b8', backgroundColor:'#94a3b8', fill:false, pointRadius:0, borderWidth:2, order:1 },
+                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'#3b82f6', fill:false, pointRadius:0, borderWidth:2, order:0 },
+                        { label:'比較', data:lockedData || [], borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData }
                     ]
                 },
+                plugins: [targetLinePlugin],
                 options: { 
                     responsive:true, 
                     maintainAspectRatio:false, 
+                    interaction: { mode: 'index', intersect: false },
                     plugins:{ 
                         legend:{labels:{color:'#94a3b8'}}, 
                         datalabels: { display: false },
-                        zoom: {
-                            zoom: {
-                                wheel: { enabled: true },
-                                pinch: { enabled: true },
-                                mode: 'x',
-                            },
-                            pan: {
-                                enabled: true,
-                                mode: 'x',
+                        tooltip: {
+                            mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#e2e8f0', bodyColor: '#e2e8f0', borderColor: 'rgba(148, 163, 184, 0.2)', borderWidth: 1,
+                            callbacks: {
+                                label: function(context) { return (context.dataset.label || '') + ': ' + context.parsed.y.toLocaleString() + '万'; },
+                                footer: function(tooltipItems) {
+                                    let total = 0, principal = 0;
+                                    tooltipItems.forEach(function(tooltipItem) {
+                                        if (tooltipItem.dataset.label === '資産総額') total = tooltipItem.raw;
+                                        if (tooltipItem.dataset.label === '元本') principal = tooltipItem.raw;
+                                    });
+                                    const profit = total - principal;
+                                    return '含み益: ' + (profit > 0 ? '+' : '') + profit.toLocaleString() + '万';
+                                }
                             }
-                        }
+                        },
+                        zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }, pan: { enabled: true, mode: 'x' } }
                     }, 
                     scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{beginAtZero: true, stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
-                    interaction:{mode:'index',intersect:false} 
                 }
             };
             const ctx = document.getElementById('chartCanvas').getContext('2d');
