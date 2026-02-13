@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v32.0 - Mobile Layout Fix</title>
+    <title>FIRE Simulator v35.0 - Taller Chart</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -44,7 +44,7 @@
         /* レイアウト設定 */
         .container-grid { 
             display: grid; 
-            grid-template-columns: 500px 1fr; 
+            grid-template-columns: 500px 1fr; /* 左500px固定 */
             gap: 24px; 
             flex: 1; 
             overflow: hidden; 
@@ -60,20 +60,25 @@
             padding-bottom: 50px; 
         }
 
+        /* 右カラム：Flexboxで縦並び・Gapで隙間確保 */
         .result-column { 
-            display: block; 
+            display: flex; 
+            flex-direction: column;
+            gap: 24px; /* 要素間に必ず24pxの隙間 */
             height: 100%; 
             overflow-y: auto; 
             padding-right: 5px;
             padding-bottom: 100px;
         }
         
+        /* 各ブロックに縮小禁止(flex-shrink-0)をつけて重なり防止 */
+        .header-area { flex: 0 0 auto; }
+        
         .main-chart-container { 
             position: relative; 
             width: 100%; 
-            height: 400px; 
-            margin-bottom: 30px; 
-            flex-shrink: 0;
+            height: 550px; /* チャートの高さを550pxに拡張（縦に伸ばしました） */
+            flex: 0 0 auto; /* 縮小禁止 */
         }
 
         .sub-charts-container { 
@@ -81,17 +86,12 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             height: 240px; 
-            margin-bottom: 30px; 
-            flex-shrink: 0;
+            flex: 0 0 auto; /* 縮小禁止 */
         }
 
-        .sticky-result { 
-            position: static !important; 
-            background: transparent !important; 
-            border: none !important; 
-            padding: 0 !important; 
-            margin-bottom: 20px;
-            flex-shrink: 0;
+        .result-summary-card { 
+            flex: 0 0 auto; /* 縮小禁止 */
+            width: 100%;
         }
 
         .mobile-chart-only { display: none; }
@@ -105,6 +105,7 @@
             .sub-charts-container > div { height: 200px; margin-bottom: 10px; }
         }
 
+        /* スクロールバー装飾 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -113,8 +114,33 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v32.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v35.0</span></h1>
     </header>
+
+    <!-- モバイル用トップエリア -->
+    <div class="lg:hidden p-4 mobile-chart-only">
+        <!-- グラフ -->
+        <div class="glass-card p-2 h-[280px] relative mb-4">
+            <canvas id="chartCanvasMobile"></canvas>
+        </div>
+        <!-- 資産ピーク・100歳時点 (モバイル用) -->
+        <div class="glass-card p-4">
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div>
+                    <p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p>
+                    <p class="text-2xl font-black text-yellow-400">
+                        <span id="resPeakAssetMobile">0</span><span class="text-xs ml-1">万</span>
+                    </p>
+                </div>
+                <div class="border-l border-slate-700">
+                    <p class="text-[9px] text-gray-500 mb-0.5">100歳時点</p>
+                    <p class="text-xl font-bold text-gray-200">
+                        <span id="resEndAssetMobile">0</span><span class="text-xs ml-1">万</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container-grid">
         <!-- 左カラム：入力 -->
@@ -194,16 +220,6 @@
                 </div>
             </div>
 
-            <!-- Mobile Chart Positioned HERE (After Asset Spec) -->
-            <div class="lg:hidden mb-5 mobile-chart-only">
-                <div class="flex justify-between items-center mb-1 px-1">
-                    <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
-                </div>
-                <div class="glass-card p-2 h-[280px] relative">
-                    <canvas id="chartCanvasMobile"></canvas>
-                </div>
-            </div>
-
             <div class="glass-card p-4 mb-5 border-indigo-500/20">
                 <h2 class="text-xs font-bold text-indigo-300 mb-3">EXIT & CRASH</h2>
                 <div class="grid grid-cols-2 gap-3 mb-3">
@@ -233,9 +249,9 @@
 
         <!-- 右カラム：結果・グラフ -->
         <div class="result-column">
-            <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
+            <div id="achievementDesktop" class="header-area hidden lg:block mb-4"></div>
 
-            <div class="flex justify-between items-center mb-2 px-1">
+            <div class="header-area flex justify-between items-center mb-2 px-1">
                 <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
                 <div class="flex gap-2">
                     <button onclick="resetChartZoom()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-bold flex items-center gap-1">🔄 リセット</button>
@@ -264,12 +280,11 @@
                 </div>
             </div>
             
-            <div class="sticky-result">
-                <div class="glass-card p-4">
-                    <div class="grid grid-cols-2 gap-4 text-center">
-                        <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
-                        <div class="border-l border-slate-700"><p class="text-[9px] text-gray-500 mb-0.5">100歳時点</p><p class="text-xl font-bold text-gray-200"><span id="resEndAsset">0</span><span class="text-xs ml-1">万</span></p></div>
-                    </div>
+            <!-- 結果要約 (PC用: モバイルでは隠す) -->
+            <div class="result-summary-card glass-card p-4 hidden lg:block">
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
+                    <div class="border-l border-slate-700"><p class="text-[9px] text-gray-500 mb-0.5">100歳時点</p><p class="text-xl font-bold text-gray-200"><span id="resEndAsset">0</span><span class="text-xs ml-1">万</span></p></div>
                 </div>
             </div>
         </div>
@@ -291,8 +306,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v32';
-        const CONFIG_KEY = 'simulatorConfig_v32';
+        const STORAGE_KEY = 'simulatorState_v35';
+        const CONFIG_KEY = 'simulatorConfig_v35';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -451,6 +466,7 @@
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             graduationIndex = null; 
 
+            // Check if initially achieved
             if (init >= target) {
                 rAge = age;
                 graduationIndex = 0;
@@ -511,8 +527,18 @@
                 }
             }
 
+            // PC用更新
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
+            
+            // モバイル用更新
+            if(document.getElementById('resPeakAssetMobile')) {
+                document.getElementById('resPeakAssetMobile').innerText = Math.round(peak/10000).toLocaleString();
+            }
+            if(document.getElementById('resEndAssetMobile')) {
+                document.getElementById('resEndAssetMobile').innerText = hTotal[hTotal.length-1].toLocaleString();
+            }
+
             renderAchievement(rAge);
             
             if (!skipMainChart) {
@@ -521,34 +547,6 @@
 
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
-        }
-
-        function switchTab(t) { 
-            activeTab=t; 
-            document.getElementById('containerSlidersCurrent').classList.toggle('hidden', t!=='current'); 
-            document.getElementById('containerSlidersFuture').classList.toggle('hidden', t!=='future'); 
-            document.getElementById('containerInputsCurrent').classList.toggle('hidden', t!=='current'); 
-            document.getElementById('containerInputsFuture').classList.toggle('hidden', t!=='future'); 
-            document.getElementById('tabCurrent').className=t==='current'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
-            document.getElementById('tabFuture').className=t==='future'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
-            
-            const suffix = t === 'current' ? '(今の資産)' : '(積立)';
-            document.getElementById('chartLabelType').innerText = suffix;
-            document.getElementById('riskLabelType').innerText = suffix;
-            if(inputMode === 'amount') { document.getElementById('initialAsset').disabled = t === 'current'; document.getElementById('monthlyAdd').disabled = t === 'future'; syncPercentToAmounts(); }
-            updateTotalBar(); 
-            calculate(true); 
-        }
-
-        function updateTotalBar() { 
-            let t=0; getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
-            document.getElementById('totalProgressBar').style.width=Math.min(t,100)+'%'; 
-        }
-        function applyPreset(t) { 
-            if(inputMode === 'amount') { alert('プリセットは％指定モードでのみ使用できます'); return; }
-            let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; 
-            getActiveAssets().forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); 
-            calculate(false); 
         }
 
         const targetLinePlugin = {
