@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v44.0 - Fix Overlap Final</title>
+    <title>FIRE Simulator v47.0 - Split Scroll Fixed</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -21,20 +21,22 @@
             font-family: 'Inter', 'Noto Sans JP', sans-serif; 
             background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
             background-attachment: fixed; 
-            /* ページ全体のスクロール設定 */
-            min-height: 100vh;
             margin: 0;
-            overflow-y: auto; 
+            /* デフォルトはスクロール許可（モバイル用） */
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
+        /* 共通コンポーネント */
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
         
+        /* モーダル */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
         .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
         
+        /* スライダー */
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; border: 2px solid #1e293b; }
@@ -43,90 +45,108 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        header { padding: 1rem 2rem; }
+        header { padding: 1rem 2rem; flex: 0 0 auto; }
 
-        /* PC用レイアウト */
+        /* --- PC用レイアウト (左右独立スクロール) --- */
         @media (min-width: 1024px) {
+            body {
+                height: 100vh;
+                overflow: hidden; /* 画面全体のスクロールを禁止 */
+                display: flex;
+                flex-direction: column;
+            }
+
             .container-grid { 
                 display: grid; 
                 grid-template-columns: 500px 1fr; /* 左500px固定 */
                 gap: 40px; 
-                padding: 0 40px 40px 40px; 
+                padding: 0 40px 0 40px; 
                 max-width: 1600px; 
                 margin: 0 auto;
+                height: 100%; /* 残りの高さを埋める */
+                overflow: hidden; /* はみ出し禁止 */
                 align-items: start;
             }
+
             .input-column {
-                /* 自然な高さ */
-                height: auto;
+                height: 100%;
+                overflow-y: auto; /* 左側だけスクロール */
+                padding-right: 10px;
+                padding-bottom: 100px; /* 下までスクロールできるように余白 */
             }
-            /* 右カラム修正: 重なり防止のため Flex Column + Gap を使用 */
+
             .result-column {
-                height: auto;
+                height: 100%;
+                overflow-y: auto; /* 右側も中身が多い場合はスクロール可 */
                 display: flex;
                 flex-direction: column;
-                gap: 24px; /* 要素間を確実に24px空ける */
+                gap: 30px; 
+                padding-right: 10px;
+                padding-bottom: 100px;
             }
         }
 
-        /* モバイル用レイアウト */
+        /* --- モバイル用レイアウト --- */
         @media (max-width: 1023px) {
-            .container-grid { display: block; padding: 16px; }
-            .input-column { margin-bottom: 40px; }
+            body { height: auto; overflow-y: auto; display: block; }
+            .container-grid { display: block; padding: 16px; height: auto; }
+            .input-column { height: auto; margin-bottom: 40px; overflow: visible; }
+            .result-column { display: none; } /* モバイルでは右カラムを非表示 */
             .mobile-chart-only { display: block; margin-bottom: 30px; }
             .pc-only { display: none !important; }
-            .result-column { display: none; } 
         }
 
         /* チャートエリア設定 */
-        
-        /* 1. メインチャート */
         .main-chart-container { 
             position: relative; 
             width: 100%; 
             height: 450px; /* 固定高さ */
             width: 100%;
-            /* マージン削除 (gapで制御) */
             margin: 0;
+            flex-shrink: 0;
         }
 
-        /* 2. サブチャートコンテナ (円グラフ・棒グラフ) */
         .sub-charts-container { 
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            /* 高さ固定を廃止し、中身に合わせて伸びるように変更 */
-            height: auto; 
-            min-height: 250px;
+            gap: 24px;
+            height: 320px; 
             width: 100%;
             margin: 0;
+            flex-shrink: 0;
         }
         
-        /* サブチャート個別のカード */
         .sub-charts-container .glass-card {
-            height: 250px; /* カードの高さを確保 */
+            height: 100%; 
             display: flex;
             flex-direction: column;
             justify-content: center;
+            position: relative;
+        }
+        
+        .chart-inner-wrapper {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            padding-top: 20px; 
         }
 
-        /* 3. 結果要約カード */
         .result-summary-card { 
             width: 100%;
             margin: 0;
-            padding: 20px;
-            /* 重なり防止の念押し */
-            position: relative; 
-            z-index: 10;
+            padding: 24px;
+            flex-shrink: 0;
         }
 
         .mobile-chart-only { display: none; }
         @media (max-width: 1023px) {
             .mobile-chart-only { display: block; }
-            .sub-charts-container { grid-template-columns: 1fr; }
+            .sub-charts-container { grid-template-columns: 1fr; height: auto; }
+            .sub-charts-container .glass-card { height: 280px; margin-bottom: 0; }
         }
 
-        /* スクロールバー */
+        /* スクロールバー装飾 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -135,7 +155,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v44.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v47.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -162,7 +182,7 @@
     </div>
 
     <div class="container-grid">
-        <!-- 左カラム：入力 -->
+        <!-- 左カラム：入力 (独立スクロール) -->
         <div class="input-column">
             <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
@@ -203,14 +223,19 @@
                         <button onclick="applyPreset('aggressive')" class="bg-purple-900/30 text-purple-400 text-[10px] py-2 rounded">🚀 爆益</button>
                     </div>
                     <div class="mb-5 bg-slate-800 rounded-full h-2 overflow-hidden"><div id="totalProgressBar" class="h-full bg-blue-500 transition-all" style="width: 100%"></div></div>
+                    
+                    <!-- コンテナ: スライダー -->
                     <div id="containerSlidersCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
                     <div id="containerSlidersFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
                 </div>
 
                 <div id="uiAmountMode" class="hidden">
                     <p class="text-[10px] text-yellow-500 mb-2 text-center bg-yellow-900/20 py-1 rounded">各資産の金額を入力してください</p>
+                    
+                    <!-- コンテナ: 金額入力 -->
                     <div id="containerInputsCurrent" class="block"><div id="inputsCurrent" class="grid grid-cols-2 gap-3"></div></div>
                     <div id="containerInputsFuture" class="hidden"><div id="inputsFuture" class="grid grid-cols-2 gap-3"></div></div>
+                    
                     <div class="mt-4 text-center border-t border-slate-700/50 pt-3">
                         <p class="text-[10px] text-gray-400">入力合計</p>
                         <p class="text-xl font-black text-white"><span id="amountModeTotal">0</span> <span class="text-xs">万円</span></p>
@@ -266,9 +291,9 @@
             </div>
         </div>
 
-        <!-- 右カラム：結果・グラフ (PC用) -->
+        <!-- 右カラム：結果・グラフ (PC用: 独立スクロール) -->
         <div class="result-column pc-only">
-            <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
+            <div id="achievementDesktop" class="header-area hidden lg:block mb-4"></div>
 
             <div class="flex justify-between items-center px-1">
                 <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
@@ -278,28 +303,28 @@
                 </div>
             </div>
             
-            <!-- メインチャート (要素1) -->
+            <!-- メインチャート -->
             <div class="glass-card p-2 main-chart-container">
                 <canvas id="chartCanvas"></canvas>
             </div>
 
-            <!-- サブチャートエリア (要素2: 高さ自動調整) -->
+            <!-- サブチャートエリア (高さ320pxに拡張) -->
             <div class="sub-charts-container">
                 <div class="glass-card p-2 text-center relative">
-                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
-                    <div class="flex-1 flex justify-center items-center pt-4 h-full">
-                        <div style="width: 80%; height: 80%;"><canvas id="portfolioChart"></canvas></div>
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full z-10">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
+                    <div class="chart-inner-wrapper">
+                        <canvas id="portfolioChart"></canvas>
                     </div>
                 </div>
                 <div class="glass-card p-2 text-center relative">
-                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full">RISK SCENARIO <span id="riskLabelType" class="text-blue-400"></span></p>
-                    <div class="flex-1 flex justify-center items-center pt-4 h-full">
-                        <div style="width: 100%; height: 80%;"><canvas id="riskReturnChart"></canvas></div>
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full z-10">RISK SCENARIO <span id="riskLabelType" class="text-blue-400"></span></p>
+                    <div class="chart-inner-wrapper">
+                        <canvas id="riskReturnChart"></canvas>
                     </div>
                 </div>
             </div>
             
-            <!-- 結果要約 (要素3: 分離配置) -->
+            <!-- 結果要約 (PC用) -->
             <div class="result-summary-card glass-card p-4">
                 <div class="grid grid-cols-2 gap-4 text-center">
                     <div><p class="text-[9px] text-gray-500 mb-0.5">資産ピーク</p><p class="text-2xl font-black text-yellow-400"><span id="resPeakAsset">0</span><span class="text-xs ml-1">万</span></p></div>
@@ -325,8 +350,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v44';
-        const CONFIG_KEY = 'simulatorConfig_v44';
+        const STORAGE_KEY = 'simulatorState_v47';
+        const CONFIG_KEY = 'simulatorConfig_v47';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -574,12 +599,30 @@
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
 
+        function switchTab(t) { 
+            activeTab=t; 
+            document.getElementById('containerSlidersCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerSlidersFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('containerInputsCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerInputsFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('tabCurrent').className=t==='current'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
+            document.getElementById('tabFuture').className=t==='future'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
+            
+            const suffix = t === 'current' ? '(今の資産)' : '(積立)';
+            document.getElementById('chartLabelType').innerText = suffix;
+            document.getElementById('riskLabelType').innerText = suffix;
+            if(inputMode === 'amount') { document.getElementById('initialAsset').disabled = t === 'current'; document.getElementById('monthlyAdd').disabled = t === 'future'; syncPercentToAmounts(); }
+            updateTotalBar(); 
+            calculate(true); 
+        }
+
         const targetLinePlugin = {
             id: 'targetLine',
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
                 
+                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
