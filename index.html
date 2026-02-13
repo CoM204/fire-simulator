@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v15.0 - Split View</title>
+    <title>FIRE Simulator v16.0 - Fixed Stack</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,62 +24,16 @@
         
         /* PC用レイアウト調整 (Split View) */
         @media (min-width: 1024px) {
-            body {
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden; /* 全体スクロール禁止 */
-            }
-            header {
-                flex: 0 0 auto;
-                padding: 1rem 2rem;
-            }
-            .container-grid {
-                display: grid;
-                grid-template-columns: 380px 1fr; /* 左サイドバー固定幅 */
-                gap: 24px;
-                flex: 1;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                padding: 0 20px 20px 20px;
-                max-width: none; /* 幅制限解除 */
-                margin: 0;
-            }
-            .input-column {
-                overflow-y: auto; /* 左側のみスクロール */
-                height: 100%;
-                padding-right: 10px;
-                padding-bottom: 50px;
-            }
-            .result-column {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                overflow: hidden;
-            }
-            .chart-wrapper-flex {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                min-height: 0; /* Flex内での縮小許可 */
-            }
-            .main-chart-container {
-                flex: 1;
-                position: relative;
-                width: 100%;
-                min-height: 300px;
-            }
-            .sticky-result {
-                position: static !important;
-                background: transparent !important;
-                border: none !important;
-                padding: 0 !important;
-                margin-top: auto;
-            }
+            body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+            header { flex: 0 0 auto; padding: 1rem 2rem; }
+            .container-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; flex: 1; width: 100%; height: 100%; overflow: hidden; padding: 0 20px 20px 20px; max-width: none; margin: 0; }
+            .input-column { overflow-y: auto; height: 100%; padding-right: 10px; padding-bottom: 50px; }
+            .result-column { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+            .chart-wrapper-flex { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+            .main-chart-container { flex: 1; position: relative; width: 100%; min-height: 300px; }
+            .sticky-result { position: static !important; background: transparent !important; border: none !important; padding: 0 !important; margin-top: auto; }
             .mobile-chart-only { display: none; }
-            
-            /* スクロールバーのカスタマイズ */
+            /* スクロールバー */
             .input-column::-webkit-scrollbar { width: 8px; }
             .input-column::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
             .input-column::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -89,7 +43,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v15.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v16.0</span></h1>
     </header>
 
     <div class="lg:hidden p-4 mobile-chart-only">
@@ -99,7 +53,7 @@
     </div>
 
     <div class="container-grid">
-        <!-- 左カラム：入力（スクロールあり） -->
+        <!-- 左カラム：入力 -->
         <div class="input-column p-1">
             <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
@@ -133,7 +87,6 @@
                     <div id="tabFuture" onclick="switchTab('future')" class="flex-1 tab-btn tab-inactive">これからの積立</div>
                 </div>
 
-                <!-- Percent Mode UI (Sliders) -->
                 <div id="uiPercentMode">
                     <div class="grid grid-cols-3 gap-2 mb-5">
                         <button onclick="applyPreset('defensive')" class="bg-emerald-900/30 text-emerald-400 text-[10px] py-2 rounded">🛡️ 鉄壁</button>
@@ -145,7 +98,6 @@
                     <div id="containerSlidersFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
                 </div>
 
-                <!-- Amount Mode UI (Inputs) -->
                 <div id="uiAmountMode" class="hidden">
                     <p class="text-[10px] text-yellow-500 mb-2 text-center bg-yellow-900/20 py-1 rounded">各資産の金額を入力してください</p>
                     <div id="containerInputsCurrent" class="block"><div id="inputsCurrent" class="grid grid-cols-2 gap-3"></div></div>
@@ -205,7 +157,7 @@
             </div>
         </div>
 
-        <!-- 右カラム：結果・グラフ（固定・最大化） -->
+        <!-- 右カラム：結果・グラフ -->
         <div class="result-column chart-area">
             <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
@@ -217,7 +169,7 @@
                     </div>
                 </div>
                 
-                <!-- メインチャート（Flexで高さ自動調整） -->
+                <!-- メインチャート -->
                 <div class="glass-card p-2 mb-4 main-chart-container hidden lg:block">
                     <canvas id="chartCanvas"></canvas>
                 </div>
@@ -253,21 +205,17 @@
                 <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white">✕</button>
             </div>
             <p class="text-xs text-gray-500 mb-4">チェックを外した資産は入力欄とグラフから非表示になります。</p>
-            <div id="assetConfigList" class="space-y-2 mb-4">
-                <!-- Generated by JS -->
-            </div>
+            <div id="assetConfigList" class="space-y-2 mb-4"></div>
             <button onclick="saveConfig()" class="w-full bg-blue-600 text-white font-bold py-2 rounded">設定を保存</button>
         </div>
     </div>
 
     <script>
-        // Initialize
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v15';
-        const CONFIG_KEY = 'simulatorConfig_v15';
+        const STORAGE_KEY = 'simulatorState_v16';
+        const CONFIG_KEY = 'simulatorConfig_v16';
         
-        // Master Asset List
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -283,14 +231,12 @@
             { key: 'lev', name: '🚀 レバナス', color: '#ec4899', ret: 0.25, crash: 0.25, defC: 0, defF: 0 }
         ];
 
-        // Global State
         let activeTab = 'current';
         let inputMode = 'percent'; 
         let visibleAssets = {}; 
         let myChart = null, myChartMobile = null, pfChart = null, rrChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
 
-        // --- Init ---
         window.onload = () => {
             loadConfig();
             renderUI();
@@ -303,6 +249,8 @@
             
             loadState();
             setInputMode('percent');
+            // Clear lockedData on new load to fix "empty bottom" issues caused by version mismatch
+            lockedData = null; 
             calculate();
         };
 
@@ -311,107 +259,55 @@
                 const s = JSON.parse(localStorage.getItem(CONFIG_KEY));
                 if (s) visibleAssets = s;
                 else ASSETS_DEF.forEach(a => visibleAssets[a.key] = true);
-            } catch(e) {
-                ASSETS_DEF.forEach(a => visibleAssets[a.key] = true);
-            }
+            } catch(e) { ASSETS_DEF.forEach(a => visibleAssets[a.key] = true); }
         }
 
-        function getActiveAssets() {
-            return ASSETS_DEF.filter(a => visibleAssets[a.key] !== false);
-        }
+        function getActiveAssets() { return ASSETS_DEF.filter(a => visibleAssets[a.key] !== false); }
 
         function renderUI() {
             const assets = getActiveAssets();
-            
-            // Sliders
             ['current', 'future'].forEach(type => {
                 document.getElementById(`sliders${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
                     <div class="bg-slate-800/40 rounded-lg p-2 border border-slate-700/50">
                         <div class="flex justify-between mb-1"><span style="color:${a.color}" class="font-bold text-[10px]">${a.name}</span><input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" class="bg-slate-900 border border-slate-600 rounded w-10 text-right text-xs text-white" oninput="syncRange('range_${type}_${a.key}', this.value)"></div>
                         <input type="range" id="range_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" class="w-full" oninput="syncNum('num_${type}_${a.key}', this.value)">
                     </div>`).join('');
-            });
-
-            // Amount Inputs
-            ['current', 'future'].forEach(type => {
                 document.getElementById(`inputs${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
-                    <div>
-                        <label class="text-[10px] text-gray-500 block mb-0.5" style="color:${a.color}">${a.name}</label>
-                        <input type="number" id="amt_${type}_${a.key}" class="glass-input text-right text-sm" placeholder="0" oninput="onAmountInput('${type}')">
-                    </div>
-                `).join('');
+                    <div><label class="text-[10px] text-gray-500 block mb-0.5" style="color:${a.color}">${a.name}</label><input type="number" id="amt_${type}_${a.key}" class="glass-input text-right text-sm" placeholder="0" oninput="onAmountInput('${type}')"></div>`).join('');
             });
-
-            // Config List
             document.getElementById('assetConfigList').innerHTML = ASSETS_DEF.map(a => `
                 <div class="flex items-center justify-between bg-slate-800 p-2 rounded">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full" style="background:${a.color}"></div>
-                        <span class="text-sm font-bold text-gray-300">${a.name}</span>
-                    </div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full" style="background:${a.color}"></div><span class="text-sm font-bold text-gray-300">${a.name}</span></div>
                     <input type="checkbox" class="w-5 h-5" id="cfg_${a.key}" ${visibleAssets[a.key]!==false?'checked':''}>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
-        // --- Config Modal ---
         function openConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
         function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; }
         function saveConfig() {
-            ASSETS_DEF.forEach(a => {
-                visibleAssets[a.key] = document.getElementById(`cfg_${a.key}`).checked;
-            });
+            ASSETS_DEF.forEach(a => visibleAssets[a.key] = document.getElementById(`cfg_${a.key}`).checked);
             localStorage.setItem(CONFIG_KEY, JSON.stringify(visibleAssets));
-            renderUI();
-            closeConfigModal();
-            setInputMode(inputMode);
-            calculate();
+            renderUI(); closeConfigModal(); setInputMode(inputMode); calculate();
         }
 
-        // --- Input Mode & Sync ---
         function setInputMode(mode) {
             inputMode = mode;
             const isPct = mode === 'percent';
             document.getElementById('btnModePercent').className = isPct ? "flex-1 py-1 text-[10px] font-bold rounded text-white bg-blue-600 transition-colors" : "flex-1 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition-colors";
             document.getElementById('btnModeAmount').className = !isPct ? "flex-1 py-1 text-[10px] font-bold rounded text-white bg-blue-600 transition-colors" : "flex-1 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition-colors";
-            
             document.getElementById('uiPercentMode').classList.toggle('hidden', !isPct);
             document.getElementById('uiAmountMode').classList.toggle('hidden', isPct);
-
-            if(isPct) {
-                syncAmountsToPercent();
-                document.getElementById('initialAsset').disabled = false;
-                document.getElementById('monthlyAdd').disabled = false;
-            } else {
-                syncPercentToAmounts();
-                if(activeTab === 'current') document.getElementById('initialAsset').disabled = true;
-                if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true;
-            }
+            if(isPct) { syncAmountsToPercent(); document.getElementById('initialAsset').disabled = false; document.getElementById('monthlyAdd').disabled = false; } 
+            else { syncPercentToAmounts(); if(activeTab === 'current') document.getElementById('initialAsset').disabled = true; if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true; }
         }
 
         function onAmountInput(type) {
             const assets = getActiveAssets();
             let total = 0;
-            assets.forEach(a => {
-                const el = document.getElementById(`amt_${type}_${a.key}`);
-                if(el) total += Number(el.value) || 0;
-            });
-            
+            assets.forEach(a => { const el = document.getElementById(`amt_${type}_${a.key}`); if(el) total += Number(el.value) || 0; });
             document.getElementById('amountModeTotal').innerText = total.toLocaleString();
-
-            if(type === 'current') document.getElementById('initialAsset').value = total;
-            else document.getElementById('monthlyAdd').value = total;
-
-            if(total > 0) {
-                assets.forEach(a => {
-                    const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0;
-                    const pct = (val / total) * 100;
-                    const rng = document.getElementById(`range_${type}_${a.key}`);
-                    const num = document.getElementById(`num_${type}_${a.key}`);
-                    if(rng) rng.value = pct;
-                    if(num) num.value = pct.toFixed(1);
-                });
-            }
+            if(type === 'current') document.getElementById('initialAsset').value = total; else document.getElementById('monthlyAdd').value = total;
+            if(total > 0) assets.forEach(a => { const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0; const pct = (val / total) * 100; const rng = document.getElementById(`range_${type}_${a.key}`); const num = document.getElementById(`num_${type}_${a.key}`); if(rng) rng.value = pct; if(num) num.value = pct.toFixed(1); });
             calculate();
         }
 
@@ -419,56 +315,32 @@
             const assets = getActiveAssets();
             const totalC = Number(document.getElementById('initialAsset').value) || 0;
             const totalF = Number(document.getElementById('monthlyAdd').value) || 0;
-            
             let wC = 0, wF = 0;
-            assets.forEach(a => {
-                wC += Number(document.getElementById(`range_current_${a.key}`).value)||0;
-                wF += Number(document.getElementById(`range_future_${a.key}`).value)||0;
-            });
-
+            assets.forEach(a => { wC += Number(document.getElementById(`range_current_${a.key}`).value)||0; wF += Number(document.getElementById(`range_future_${a.key}`).value)||0; });
             assets.forEach(a => {
                 const pC = Number(document.getElementById(`range_current_${a.key}`).value)||0;
-                const amtC = wC > 0 ? (pC / wC) * totalC : 0;
-                document.getElementById(`amt_current_${a.key}`).value = Math.round(amtC);
-
+                document.getElementById(`amt_current_${a.key}`).value = Math.round(wC > 0 ? (pC / wC) * totalC : 0);
                 const pF = Number(document.getElementById(`range_future_${a.key}`).value)||0;
-                const amtF = wF > 0 ? (pF / wF) * totalF : 0;
-                document.getElementById(`amt_future_${a.key}`).value = Math.round(amtF);
+                document.getElementById(`amt_future_${a.key}`).value = Math.round(wF > 0 ? (pF / wF) * totalF : 0);
             });
-            
-            const t = activeTab === 'current' ? totalC : totalF;
-            document.getElementById('amountModeTotal').innerText = t.toLocaleString();
+            document.getElementById('amountModeTotal').innerText = (activeTab === 'current' ? totalC : totalF).toLocaleString();
         }
 
         function syncAmountsToPercent() {
             ['current', 'future'].forEach(type => {
                 const assets = getActiveAssets();
                 let total = 0;
-                assets.forEach(a => {
-                    const el = document.getElementById(`amt_${type}_${a.key}`);
-                    if(el) total += Number(el.value) || 0;
-                });
-                if(total > 0) {
-                    assets.forEach(a => {
-                        const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0;
-                        const pct = (val / total) * 100;
-                        const rng = document.getElementById(`range_${type}_${a.key}`);
-                        const num = document.getElementById(`num_${type}_${a.key}`);
-                        if(rng) rng.value = pct;
-                        if(num) num.value = pct.toFixed(1);
-                    });
-                }
+                assets.forEach(a => total += Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0);
+                if(total > 0) assets.forEach(a => { const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0; const pct = (val / total) * 100; const rng = document.getElementById(`range_${type}_${a.key}`); const num = document.getElementById(`num_${type}_${a.key}`); if(rng) rng.value = pct; if(num) num.value = pct.toFixed(1); });
             });
         }
 
         function syncNum(id, v) { document.getElementById(id).value=v; calculate(); }
         function syncRange(id, v) { document.getElementById(id).value=Math.max(0,Math.min(100,v)); calculate(); }
 
-        // --- Core Calc ---
         function calculate() {
             updateTotalBar(); saveState();
             const assets = getActiveAssets();
-            
             const age = +document.getElementById('currentAge').value || 35;
             const init = (+document.getElementById('initialAsset').value || 0) * 10000;
             const monthly = (+document.getElementById('monthlyAdd').value) * 10000;
@@ -480,7 +352,6 @@
             let retC=0, crashC=0, totalC=0, pfDataC=[];
             assets.forEach(a => { const v = +document.getElementById(`range_current_${a.key}`).value||0; totalC += v; if(v>0) pfDataC.push({name:a.name, val:v, color:a.color}); });
             assets.forEach(a => { if(totalC>0){ const w=+document.getElementById(`range_current_${a.key}`).value/totalC; retC+=a.ret*w; crashC+=a.crash*w; }});
-
             let retF=0, crashF=0, totalF=0, pfDataF=[];
             assets.forEach(a => { const v = +document.getElementById(`range_future_${a.key}`).value||0; totalF += v; if(v>0) pfDataF.push({name:a.name, val:v, color:a.color}); });
             assets.forEach(a => { if(totalF>0){ const w=+document.getElementById(`range_future_${a.key}`).value/totalF; retF+=a.ret*w; crashF+=a.crash*w; }});
@@ -489,11 +360,8 @@
             document.getElementById('tabRiskCurrent').innerText = totalC>0 ? (-(1-crashC)*100).toFixed(1) : '0.0';
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
             document.getElementById('tabRiskFuture').innerText = totalF>0 ? (-(1-crashF)*100).toFixed(1) : '0.0';
-            
-            const expRet = ((retC+retF)/2*100).toFixed(1);
-            const maxCrash = (-(1-(crashC+crashF)/2)*100).toFixed(1);
-            document.getElementById('specTotalRet').innerText = expRet;
-            document.getElementById('specTotalCrash').innerText = maxCrash;
+            document.getElementById('specTotalRet').innerText = ((retC+retF)/2*100).toFixed(1);
+            document.getElementById('specTotalCrash').innerText = (-(1-(crashC+crashF)/2)*100).toFixed(1);
 
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             
@@ -512,25 +380,16 @@
                 const isCr = memoCrashYears.includes(i);
                 if((cA+cAcc)>=target && !rAge) rAge=age+i-1;
                 if(document.getElementById('coastFireMode').checked && (cA+cAcc)>=target && !gAge) gAge=age+i-1;
-                
-                let add=0; 
-                if(age+i<wAge && !gAge) { add=monthly*12; cP+=add; }
-                
-                if(age+i<wAge) { 
-                    cA*=isCr?crashC:(1+retC); 
-                    cAcc=(cAcc+add)*(isCr?crashF:(1+retF)); 
-                } else {
+                let add=0; if(age+i<wAge && !gAge) { add=monthly*12; cP+=add; }
+                if(age+i<wAge) { cA*=isCr?crashC:(1+retC); cAcc=(cAcc+add)*(isCr?crashF:(1+retF)); } 
+                else {
                     let tot=cA+cAcc; let wAmt = tot * wRate;
                     if(tot>0){ let r=wAmt/tot; if(r>1)r=1; cP-=cP*r; }
                     tot=Math.max(0, tot-wAmt);
                     tot*=isCr?(cA*crashC+cAcc*crashF)/(cA+cAcc||1):(1+(cA*retC+cAcc*retF)/(cA+cAcc||1));
                     cA=tot*(cA/(cA+cAcc||1)); cAcc=tot-cA;
                 }
-                const now=cA+cAcc; 
-                peak=Math.max(peak,now); 
-                hAge.push(age+i); 
-                hPrin.push(Math.round(cP/10000)); 
-                hTotal.push(Math.round(now/10000));
+                const now=cA+cAcc; peak=Math.max(peak,now); hAge.push(age+i); hPrin.push(Math.round(cP/10000)); hTotal.push(Math.round(now/10000));
             }
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
@@ -542,7 +401,6 @@
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
 
-        // --- UI Utils ---
         function switchTab(t) { 
             activeTab=t; 
             document.getElementById('containerSlidersCurrent').classList.toggle('hidden', t!=='current'); 
@@ -555,18 +413,12 @@
             const suffix = t === 'current' ? '(今の資産)' : '(積立)';
             document.getElementById('chartLabelType').innerText = suffix;
             document.getElementById('riskLabelType').innerText = suffix;
-
-            if(inputMode === 'amount') {
-                document.getElementById('initialAsset').disabled = t === 'current';
-                document.getElementById('monthlyAdd').disabled = t === 'future';
-                syncPercentToAmounts();
-            }
+            if(inputMode === 'amount') { document.getElementById('initialAsset').disabled = t === 'current'; document.getElementById('monthlyAdd').disabled = t === 'future'; syncPercentToAmounts(); }
             updateTotalBar(); calculate(); 
         }
 
         function updateTotalBar() { 
-            let t=0; 
-            getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
+            let t=0; getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
             document.getElementById('totalProgressBar').style.width=Math.min(t,100)+'%'; 
         }
         function applyPreset(t) { 
@@ -576,7 +428,6 @@
             calculate(); 
         }
 
-        // --- Chart ---
         function drawMainChart(labels, dTotal, dPrin) {
             if(!document.getElementById('chartCanvas')) return;
             const config = {
@@ -585,35 +436,23 @@
                     labels: labels,
                     datasets: [
                         { 
-                            label:'元本', 
-                            data:dPrin, 
-                            borderColor:'#64748b', 
-                            backgroundColor:'rgba(15,23,42,0.8)', 
-                            fill:'origin', 
-                            pointRadius:0, borderWidth:1, order:1 
+                            label:'元本', data:dPrin, borderColor:'#475569', backgroundColor:'#1e293b', 
+                            fill:'origin', pointRadius:0, borderWidth:1, order:1 
                         },
                         { 
-                            label:'資産総額 (含み益含む)', 
-                            data:dTotal, 
-                            borderColor:'#10b981', 
-                            backgroundColor:'rgba(16, 185, 129, 0.2)', 
-                            fill:0, /* Fill to dataset index 0 (Principal) */
-                            pointRadius:0, borderWidth:2, order:0 
+                            label:'資産総額 (含み益)', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(16, 185, 129, 0.3)', 
+                            fill:0, /* Fill to Dataset 0 (Principal) */ pointRadius:0, borderWidth:2, order:0 
                         },
                         { 
-                            label:'比較', 
-                            data:lockedData || [], 
-                            borderColor:'rgba(255,255,255,0.5)', 
-                            borderDash:[5,5], 
-                            pointRadius:0, fill:false, order:2, hidden:!lockedData 
+                            label:'比較', data:lockedData || [], borderColor:'rgba(255,255,255,0.5)', 
+                            borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData 
                         }
                     ]
                 },
                 options: { 
-                    responsive:true, 
-                    maintainAspectRatio:false, 
+                    responsive:true, maintainAspectRatio:false, 
                     plugins:{ legend:{labels:{color:'#94a3b8'}}, datalabels: { display: false } }, 
-                    scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
+                    scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{beginAtZero: true, stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
                     interaction:{mode:'index',intersect:false} 
                 }
             };
@@ -628,36 +467,10 @@
         function updateSubCharts(retVal, crashVal, pfData) {
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
-            
             if(pfChart) pfChart.destroy();
-            pfChart = new Chart(ctxPf, {
-                type: 'doughnut',
-                plugins: [ChartDataLabels], 
-                data: { 
-                    labels: pfData.map(d=>d.name), 
-                    datasets: [{ data: pfData.map(d=>d.val), backgroundColor: pfData.map(d=>d.color), borderWidth:0 }] 
-                },
-                options: { 
-                    responsive:true, maintainAspectRatio:false, 
-                    plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + Math.round(val) + '%', anchor: 'center', align: 'center' } }, 
-                    cutout:'50%' 
-                }
-            });
-            
+            pfChart = new Chart(ctxPf, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: pfData.map(d=>d.name), datasets: [{ data: pfData.map(d=>d.val), backgroundColor: pfData.map(d=>d.color), borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + Math.round(val) + '%', anchor: 'center', align: 'center' } }, cutout:'50%' } });
             if(rrChart) rrChart.destroy();
-            rrChart = new Chart(ctxRr, {
-                type: 'bar',
-                plugins: [ChartDataLabels],
-                data: {
-                    labels: ['期待リターン', '最大リスク'],
-                    datasets: [{ data: [parseFloat(retVal), parseFloat(crashVal)], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 4 }]
-                },
-                options: {
-                    responsive:true, maintainAspectRatio:false, layout: { padding: { top: 40 } }, indexAxis: 'x',
-                    plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (val) => val > 0 ? '+' + val + '%' : val + '%', anchor: 'end', align: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 ? 'top' : 'bottom' } }, 
-                    scales:{ x:{ grid:{display:false}, ticks:{color:'#94a3b8', font:{size:10}} }, y:{ grid:{color:'#334155'}, ticks:{color:'#64748b'}, beginAtZero:true } } 
-                }
-            });
+            rrChart = new Chart(ctxRr, { type: 'bar', plugins: [ChartDataLabels], data: { labels: ['期待リターン', '最大リスク'], datasets: [{ data: [parseFloat(retVal), parseFloat(crashVal)], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 4 }] }, options: { responsive:true, maintainAspectRatio:false, layout: { padding: { top: 40 } }, indexAxis: 'x', plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (val) => val > 0 ? '+' + val + '%' : val + '%', anchor: 'end', align: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 ? 'top' : 'bottom' } }, scales:{ x:{ grid:{display:false}, ticks:{color:'#94a3b8', font:{size:10}} }, y:{ grid:{color:'#334155'}, ticks:{color:'#64748b'}, beginAtZero:true } } } });
         }
 
         function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[1].data]; alert('固定しました'); calculate(); } }
