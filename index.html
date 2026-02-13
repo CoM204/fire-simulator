@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v16.0 - Fixed Stack</title>
+    <title>FIRE Simulator v19.0 - Zoom Chart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,8 +13,11 @@
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        /* 拡大モーダル用のスタイル調整 */
+        .chart-modal-content { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; width: 95%; height: 90%; display: flex; flex-direction: column; }
+        .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+        
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; border: 2px solid #1e293b; }
@@ -22,7 +25,6 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        /* PC用レイアウト調整 (Split View) */
         @media (min-width: 1024px) {
             body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
             header { flex: 0 0 auto; padding: 1rem 2rem; }
@@ -33,7 +35,6 @@
             .main-chart-container { flex: 1; position: relative; width: 100%; min-height: 300px; }
             .sticky-result { position: static !important; background: transparent !important; border: none !important; padding: 0 !important; margin-top: auto; }
             .mobile-chart-only { display: none; }
-            /* スクロールバー */
             .input-column::-webkit-scrollbar { width: 8px; }
             .input-column::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
             .input-column::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -43,7 +44,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v16.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v19.0</span></h1>
     </header>
 
     <div class="lg:hidden p-4 mobile-chart-only">
@@ -165,6 +166,7 @@
                 <div class="flex justify-between items-center mb-2 px-1">
                     <span class="text-[9px] text-gray-500 font-bold">SIMULATION CHART</span>
                     <div class="flex gap-2">
+                        <button onclick="openChartModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-bold flex items-center gap-1">🔍 拡大</button>
                         <button onclick="downloadChart()" class="bg-slate-800 text-gray-300 px-2 py-1 rounded text-[10px]">画像保存</button>
                     </div>
                 </div>
@@ -199,7 +201,7 @@
 
     <!-- CONFIG MODAL -->
     <div id="configModal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="config-modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-white">表示項目の選択</h3>
                 <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white">✕</button>
@@ -210,31 +212,44 @@
         </div>
     </div>
 
+    <!-- CHART EXPAND MODAL -->
+    <div id="chartModal" class="modal-overlay" onclick="if(event.target === this) closeChartModal()">
+        <div class="chart-modal-content">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <span class="text-white font-bold text-lg">SIMULATION CHART (FULL SCREEN)</span>
+                <button onclick="closeChartModal()" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors">✕ 閉じる</button>
+            </div>
+            <div class="flex-1 relative w-full h-full">
+                <canvas id="modalChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v16';
-        const CONFIG_KEY = 'simulatorConfig_v16';
+        const STORAGE_KEY = 'simulatorState_v19';
+        const CONFIG_KEY = 'simulatorConfig_v19';
         
         const ASSETS_DEF = [
-            { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
-            { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
-            { key: 'gold', name: '🥇 金',   color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
-            { key: 'reit', name: '🏢 不動産', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0 },
-            { key: 'orkan', name: '🛡️ オルカン', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50 },
-            { key: 'sp500', name: '⚔️ S&P500', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 0, defF: 30 },
-            { key: 'nasdaq', name: '💻 NASDAQ', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 20 },
-            { key: 'fang', name: '💎 FANG+', color: '#f472b6', ret: 0.17, crash: 0.45, defC: 0, defF: 0 },
-            { key: 'cyc', name: '🔥 景気敏感', color: '#ef4444', ret: 0.15, crash: 0.45, defC: 0, defF: 0 },
-            { key: 'def', name: '🛡️ ディフェン', color: '#84cc16', ret: 0.06, crash: 0.75, defC: 0, defF: 0 },
-            { key: 'cryp', name: '₿ 仮想通貨', color: '#8b5cf6', ret: 0.30, crash: 0.30, defC: 0, defF: 0 },
-            { key: 'lev', name: '🚀 レバナス', color: '#ec4899', ret: 0.25, crash: 0.25, defC: 0, defF: 0 }
+            { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
+            { key: 'bond', name: '📜 債券', desc: '米国債等。株と逆の動き', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
+            { key: 'gold', name: '🥇 金',   desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
+            { key: 'reit', name: '🏢 不動産', desc: '家賃収入。ミドルリスク', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0 },
+            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50 },
+            { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 0, defF: 30 },
+            { key: 'nasdaq', name: '💻 NASDAQ100', desc: '米国のハイテク中心100社', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 20 },
+            { key: 'fang', name: '💎 FANG+', desc: '巨大IT企業10社に集中', color: '#f472b6', ret: 0.17, crash: 0.45, defC: 0, defF: 0 },
+            { key: 'cyc', name: '🔥 景気敏感株', desc: '金融/素材。景気で変動大', color: '#ef4444', ret: 0.15, crash: 0.45, defC: 0, defF: 0 },
+            { key: 'def', name: '🛡️ ディフェンス株', desc: '生活必需品/ヘルスケア', color: '#84cc16', ret: 0.06, crash: 0.75, defC: 0, defF: 0 },
+            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等。超ハイリスク', color: '#8b5cf6', ret: 0.30, crash: 0.30, defC: 0, defF: 0 },
+            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQの2倍の値動き', color: '#ec4899', ret: 0.25, crash: 0.25, defC: 0, defF: 0 }
         ];
 
         let activeTab = 'current';
         let inputMode = 'percent'; 
         let visibleAssets = {}; 
-        let myChart = null, myChartMobile = null, pfChart = null, rrChart = null;
+        let myChart = null, myChartMobile = null, pfChart = null, rrChart = null, modalChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
 
         window.onload = () => {
@@ -249,7 +264,6 @@
             
             loadState();
             setInputMode('percent');
-            // Clear lockedData on new load to fix "empty bottom" issues caused by version mismatch
             lockedData = null; 
             calculate();
         };
@@ -269,11 +283,16 @@
             ['current', 'future'].forEach(type => {
                 document.getElementById(`sliders${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
                     <div class="bg-slate-800/40 rounded-lg p-2 border border-slate-700/50">
-                        <div class="flex justify-between mb-1"><span style="color:${a.color}" class="font-bold text-[10px]">${a.name}</span><input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" class="bg-slate-900 border border-slate-600 rounded w-10 text-right text-xs text-white" oninput="syncRange('range_${type}_${a.key}', this.value)"></div>
+                        <div class="flex justify-between mb-0.5"><span style="color:${a.color}" class="font-bold text-[10px]">${a.name}</span><input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" class="bg-slate-900 border border-slate-600 rounded w-10 text-right text-xs text-white" oninput="syncRange('range_${type}_${a.key}', this.value)"></div>
+                        <div class="text-[8px] text-gray-500 mb-1">${a.desc}</div>
                         <input type="range" id="range_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" class="w-full" oninput="syncNum('num_${type}_${a.key}', this.value)">
                     </div>`).join('');
                 document.getElementById(`inputs${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
-                    <div><label class="text-[10px] text-gray-500 block mb-0.5" style="color:${a.color}">${a.name}</label><input type="number" id="amt_${type}_${a.key}" class="glass-input text-right text-sm" placeholder="0" oninput="onAmountInput('${type}')"></div>`).join('');
+                    <div class="bg-slate-800/20 p-1.5 rounded">
+                        <label class="text-[10px] font-bold block mb-0.5" style="color:${a.color}">${a.name}</label>
+                        <div class="text-[8px] text-gray-500 mb-1">${a.desc}</div>
+                        <input type="number" id="amt_${type}_${a.key}" class="glass-input text-right text-sm" placeholder="0" oninput="onAmountInput('${type}')">
+                    </div>`).join('');
             });
             document.getElementById('assetConfigList').innerHTML = ASSETS_DEF.map(a => `
                 <div class="flex items-center justify-between bg-slate-800 p-2 rounded">
@@ -288,6 +307,23 @@
             ASSETS_DEF.forEach(a => visibleAssets[a.key] = document.getElementById(`cfg_${a.key}`).checked);
             localStorage.setItem(CONFIG_KEY, JSON.stringify(visibleAssets));
             renderUI(); closeConfigModal(); setInputMode(inputMode); calculate();
+        }
+
+        // --- Chart Zoom Modal ---
+        function openChartModal() {
+            if(!myChart) return;
+            document.getElementById('chartModal').style.display = 'flex';
+            const ctxModal = document.getElementById('modalChartCanvas').getContext('2d');
+            if(modalChart) modalChart.destroy();
+            // Clone config
+            const newConfig = JSON.parse(JSON.stringify(myChart.config));
+            newConfig.options.maintainAspectRatio = false; // Allow full size
+            newConfig.options.responsive = true;
+            modalChart = new Chart(ctxModal, newConfig);
+        }
+        function closeChartModal() {
+            document.getElementById('chartModal').style.display = 'none';
+            if(modalChart) { modalChart.destroy(); modalChart = null; }
         }
 
         function setInputMode(mode) {
@@ -436,8 +472,8 @@
                     labels: labels,
                     datasets: [
                         { 
-                            label:'元本', data:dPrin, borderColor:'#475569', backgroundColor:'#1e293b', 
-                            fill:'origin', pointRadius:0, borderWidth:1, order:1 
+                            label:'元本', data:dPrin, borderColor:'#94a3b8', backgroundColor:'rgba(148, 163, 184, 0.2)', 
+                            fill:'origin', pointRadius:0, borderWidth:2, order:1 
                         },
                         { 
                             label:'資産総額 (含み益)', data:dTotal, borderColor:'#3b82f6', backgroundColor:'rgba(16, 185, 129, 0.3)', 
@@ -470,7 +506,7 @@
             if(pfChart) pfChart.destroy();
             pfChart = new Chart(ctxPf, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: pfData.map(d=>d.name), datasets: [{ data: pfData.map(d=>d.val), backgroundColor: pfData.map(d=>d.color), borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + Math.round(val) + '%', anchor: 'center', align: 'center' } }, cutout:'50%' } });
             if(rrChart) rrChart.destroy();
-            rrChart = new Chart(ctxRr, { type: 'bar', plugins: [ChartDataLabels], data: { labels: ['期待リターン', '最大リスク'], datasets: [{ data: [parseFloat(retVal), parseFloat(crashVal)], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 4 }] }, options: { responsive:true, maintainAspectRatio:false, layout: { padding: { top: 40 } }, indexAxis: 'x', plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (val) => val > 0 ? '+' + val + '%' : val + '%', anchor: 'end', align: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 ? 'top' : 'bottom' } }, scales:{ x:{ grid:{display:false}, ticks:{color:'#94a3b8', font:{size:10}} }, y:{ grid:{color:'#334155'}, ticks:{color:'#64748b'}, beginAtZero:true } } } });
+            rrChart = new Chart(ctxRr, { type: 'bar', plugins: [ChartDataLabels], data: { labels: ['期待リターン', '最大リスク'], datasets: [{ data: [parseFloat(retVal), parseFloat(crashVal)], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 4, maxBarThickness: 40 }] }, options: { responsive:true, maintainAspectRatio:false, layout: { padding: { top: 40 } }, indexAxis: 'x', plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (val) => val > 0 ? '+' + val + '%' : val + '%', anchor: 'end', align: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0 ? 'top' : 'bottom' } }, scales:{ x:{ grid:{display:false}, ticks:{color:'#94a3b8', font:{size:10}} }, y:{ grid:{color:'#334155'}, ticks:{color:'#64748b'}, beginAtZero:true } } } });
         }
 
         function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[1].data]; alert('固定しました'); calculate(); } }
