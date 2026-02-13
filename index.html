@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v35.0 - Taller Chart</title>
+    <title>FIRE Simulator v36.0 - Layout Fix Final</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -25,6 +25,7 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
+            margin: 0;
         }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
@@ -44,13 +45,14 @@
         /* レイアウト設定 */
         .container-grid { 
             display: grid; 
-            grid-template-columns: 500px 1fr; /* 左500px固定 */
+            /* 左側を500pxに拡張 */
+            grid-template-columns: 500px 1fr; 
             gap: 24px; 
             flex: 1; 
             overflow: hidden; 
             padding: 0 20px 0 20px; 
             max-width: none; 
-            margin: 0; 
+            width: 100%;
         }
 
         .input-column { 
@@ -60,25 +62,26 @@
             padding-bottom: 50px; 
         }
 
-        /* 右カラム：Flexboxで縦並び・Gapで隙間確保 */
+        /* 右カラム修正: Flexboxで縦並び・Gapで隙間確保・重なり防止 */
         .result-column { 
             display: flex; 
             flex-direction: column;
-            gap: 24px; /* 要素間に必ず24pxの隙間 */
+            justify-content: flex-start; /* 上詰め */
+            gap: 24px; /* 要素間に必ず24pxの隙間を確保 */
             height: 100%; 
             overflow-y: auto; 
-            padding-right: 5px;
-            padding-bottom: 100px;
+            padding-right: 10px;
+            padding-bottom: 50px;
         }
         
-        /* 各ブロックに縮小禁止(flex-shrink-0)をつけて重なり防止 */
         .header-area { flex: 0 0 auto; }
         
         .main-chart-container { 
             position: relative; 
             width: 100%; 
-            height: 550px; /* チャートの高さを550pxに拡張（縦に伸ばしました） */
-            flex: 0 0 auto; /* 縮小禁止 */
+            height: 450px; /* 固定高さ */
+            flex-shrink: 0; /* 縮小禁止 */
+            background: transparent;
         }
 
         .sub-charts-container { 
@@ -86,23 +89,25 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             height: 240px; 
-            flex: 0 0 auto; /* 縮小禁止 */
+            flex-shrink: 0; /* 縮小禁止 */
         }
 
         .result-summary-card { 
-            flex: 0 0 auto; /* 縮小禁止 */
             width: 100%;
+            flex-shrink: 0; /* 縮小禁止 */
+            /* position: static で配置されるため重ならない */
         }
 
         .mobile-chart-only { display: none; }
+        
         @media (max-width: 1024px) {
             body { height: auto; overflow: auto; display: block; }
             .container-grid { display: block; padding: 16px; height: auto; overflow: visible; }
-            .input-column, .result-column { height: auto; overflow: visible; padding-bottom: 20px; }
+            .input-column, .result-column { height: auto; overflow: visible; padding-bottom: 20px; display: block; }
             .mobile-chart-only { display: block; }
             .main-chart-container { display: none; } 
-            .sub-charts-container { grid-template-columns: 1fr; height: auto; }
-            .sub-charts-container > div { height: 200px; margin-bottom: 10px; }
+            .sub-charts-container { grid-template-columns: 1fr; height: auto; margin-top: 20px; }
+            .sub-charts-container > div { height: 200px; margin-bottom: 16px; }
         }
 
         /* スクロールバー装飾 */
@@ -114,7 +119,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v35.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v36.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -306,8 +311,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v35';
-        const CONFIG_KEY = 'simulatorConfig_v35';
+        const STORAGE_KEY = 'simulatorState_v36';
+        const CONFIG_KEY = 'simulatorConfig_v36';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -547,6 +552,34 @@
 
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
+        }
+
+        function switchTab(t) { 
+            activeTab=t; 
+            document.getElementById('containerSlidersCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerSlidersFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('containerInputsCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerInputsFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('tabCurrent').className=t==='current'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
+            document.getElementById('tabFuture').className=t==='future'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
+            
+            const suffix = t === 'current' ? '(今の資産)' : '(積立)';
+            document.getElementById('chartLabelType').innerText = suffix;
+            document.getElementById('riskLabelType').innerText = suffix;
+            if(inputMode === 'amount') { document.getElementById('initialAsset').disabled = t === 'current'; document.getElementById('monthlyAdd').disabled = t === 'future'; syncPercentToAmounts(); }
+            updateTotalBar(); 
+            calculate(true); 
+        }
+
+        function updateTotalBar() { 
+            let t=0; getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
+            document.getElementById('totalProgressBar').style.width=Math.min(t,100)+'%'; 
+        }
+        function applyPreset(t) { 
+            if(inputMode === 'amount') { alert('プリセットは％指定モードでのみ使用できます'); return; }
+            let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; 
+            getActiveAssets().forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); 
+            calculate(false); 
         }
 
         const targetLinePlugin = {
