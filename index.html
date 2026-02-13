@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v49.0 - Zoom Fix</title>
+    <title>FIRE Simulator v50.0 - Tab & Pan Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -78,6 +78,10 @@
             height: 450px; 
             width: 100%;
             margin: 0;
+            cursor: grab; /* ドラッグ可能を示すカーソル */
+        }
+        .main-chart-container:active {
+            cursor: grabbing;
         }
 
         .sub-charts-container { 
@@ -128,7 +132,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v49.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v50.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -281,7 +285,7 @@
                 <canvas id="chartCanvas"></canvas>
             </div>
 
-            <!-- サブチャートエリア -->
+            <!-- サブチャートエリア (高さ320pxに拡張) -->
             <div class="sub-charts-container">
                 <div class="glass-card p-2 text-center relative">
                     <p class="text-[10px] text-gray-400 font-bold mb-1 absolute top-2 left-0 w-full z-10">ASSET ALLOCATION <span id="chartLabelType" class="text-blue-400"></span></p>
@@ -323,8 +327,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v49';
-        const CONFIG_KEY = 'simulatorConfig_v49';
+        const STORAGE_KEY = 'simulatorState_v50';
+        const CONFIG_KEY = 'simulatorConfig_v50';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -407,15 +411,79 @@
 
         function resetChartZoom() { if(myChart) myChart.resetZoom(); }
 
+        // --- Tab Switch Logic ---
+        function switchTab(t) { 
+            activeTab = t; 
+            const isCurrent = (t === 'current');
+
+            // Tabs
+            document.getElementById('tabCurrent').className = isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            document.getElementById('tabFuture').className = !isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            
+            // Containers - Explicit add/remove classes for safety
+            const scC = document.getElementById('containerSlidersCurrent');
+            const scF = document.getElementById('containerSlidersFuture');
+            const icC = document.getElementById('containerInputsCurrent');
+            const icF = document.getElementById('containerInputsFuture');
+
+            if (isCurrent) {
+                scC.classList.remove('hidden'); scF.classList.add('hidden');
+                icC.classList.remove('hidden'); icF.classList.add('hidden');
+            } else {
+                scC.classList.add('hidden'); scF.classList.remove('hidden');
+                icC.classList.add('hidden'); icF.classList.remove('hidden');
+            }
+
+            // Labels & Inputs
+            const label1 = document.getElementById('chartLabelType');
+            const label2 = document.getElementById('riskLabelType');
+            const suffix = isCurrent ? '(今の資産)' : '(積立)';
+            if(label1) label1.innerText = suffix;
+            if(label2) label2.innerText = suffix;
+
+            if(inputMode === 'amount') { 
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = isCurrent;
+                if(inpMonth) inpMonth.disabled = !isCurrent;
+                syncPercentToAmounts(); 
+            } else {
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = false;
+                if(inpMonth) inpMonth.disabled = false;
+            }
+
+            updateTotalBar(); 
+            calculate(true); 
+        }
+
         function setInputMode(mode) {
             inputMode = mode;
             const isPct = mode === 'percent';
             document.getElementById('btnModePercent').className = isPct ? "flex-1 py-1 text-[10px] font-bold rounded text-white bg-blue-600 transition-colors" : "flex-1 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition-colors";
             document.getElementById('btnModeAmount').className = !isPct ? "flex-1 py-1 text-[10px] font-bold rounded text-white bg-blue-600 transition-colors" : "flex-1 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white transition-colors";
-            document.getElementById('uiPercentMode').classList.toggle('hidden', !isPct);
-            document.getElementById('uiAmountMode').classList.toggle('hidden', isPct);
-            if(isPct) { syncAmountsToPercent(); document.getElementById('initialAsset').disabled = false; document.getElementById('monthlyAdd').disabled = false; } 
-            else { syncPercentToAmounts(); if(activeTab === 'current') document.getElementById('initialAsset').disabled = true; if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true; }
+            
+            const pMode = document.getElementById('uiPercentMode');
+            const aMode = document.getElementById('uiAmountMode');
+            if(isPct) {
+                pMode.classList.remove('hidden');
+                aMode.classList.add('hidden');
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = false;
+                if(inpMonth) inpMonth.disabled = false;
+                syncAmountsToPercent();
+            } else {
+                pMode.classList.add('hidden');
+                aMode.classList.remove('hidden');
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = (activeTab === 'current');
+                if(inpMonth) inpMonth.disabled = (activeTab === 'future');
+                syncPercentToAmounts();
+            }
+            switchTab(activeTab); // Re-trigger tab visibility
         }
 
         function onAmountInput(type) {
@@ -496,7 +564,12 @@
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             graduationIndex = null; 
 
-            if (init >= target) { rAge = age; graduationIndex = 0; }
+            // Check if initially achieved
+            if (init >= target) {
+                rAge = age;
+                graduationIndex = 0;
+            }
+
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -510,12 +583,18 @@
 
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
+                
                 let add = 0;
                 if(age+i < wAge) {
-                    if(!document.getElementById('coastFireMode').checked) add = monthly * 12;
-                    else if (!gAge) add = monthly * 12;
+                    if(!document.getElementById('coastFireMode').checked) {
+                        add = monthly * 12;
+                    } else if (!gAge) {
+                        add = monthly * 12;
+                    }
                 }
+                
                 cP += add;
+
                 if(age+i < wAge) { 
                     cA *= isCr ? crashC : (1+retC); 
                     cAcc = (cAcc + add) * (isCr ? crashF : (1+retF)); 
@@ -530,21 +609,40 @@
                     cA = tot * (cA/(cA+cAcc||1)); 
                     cAcc = tot - cA;
                 }
+
                 const now = cA + cAcc; 
                 peak = Math.max(peak, now); 
-                hAge.push(age+i); hPrin.push(Math.round(cP/10000)); hTotal.push(Math.round(now/10000));
-                if(now >= target && !rAge) { rAge = age + i; graduationIndex = i; }
-                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) gAge = age + i;
+                hAge.push(age+i); 
+                hPrin.push(Math.round(cP/10000)); 
+                hTotal.push(Math.round(now/10000));
+
+                if(now >= target && !rAge) {
+                    rAge = age + i;
+                    graduationIndex = i; 
+                }
+                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) {
+                    gAge = age + i;
+                }
             }
 
+            // PC用更新
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
-            if(document.getElementById('resPeakAssetMobile')) document.getElementById('resPeakAssetMobile').innerText = Math.round(peak/10000).toLocaleString();
-            if(document.getElementById('resEndAssetMobile')) document.getElementById('resEndAssetMobile').innerText = hTotal[hTotal.length-1].toLocaleString();
+            
+            // モバイル用更新
+            if(document.getElementById('resPeakAssetMobile')) {
+                document.getElementById('resPeakAssetMobile').innerText = Math.round(peak/10000).toLocaleString();
+            }
+            if(document.getElementById('resEndAssetMobile')) {
+                document.getElementById('resEndAssetMobile').innerText = hTotal[hTotal.length-1].toLocaleString();
+            }
 
             renderAchievement(rAge);
             
-            if (!skipMainChart) drawMainChart(hAge, hTotal, hPrin);
+            if (!skipMainChart) {
+                drawMainChart(hAge, hTotal, hPrin);
+            }
+
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
@@ -554,8 +652,11 @@
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
+                
+                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
+
                 const xPos = meta.data[graduationIndex].x;
                 
                 ctx.save();
@@ -572,17 +673,24 @@
                 ctx.textAlign = 'left';
                 const label = `🚩 ${chart.data.labels[graduationIndex]}歳で達成`;
                 const textWidth = ctx.measureText(label).width;
+                
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(xPos + 4, top + 10, textWidth + 10, 20);
+                
                 ctx.fillStyle = '#facc15';
                 ctx.fillText(label, xPos + 9, top + 24);
+                
                 ctx.restore();
             }
         };
 
         function drawMainChart(labels, dTotal, dPrin) {
+            // 現在の年齢
             const age = +document.getElementById('currentAge').value || 35;
+            
+            // X軸の最大値を「80歳」または「現在+5年」の大きい方に設定
             const initialMaxAge = Math.max(80, age + 5);
+
             const config = {
                 type: 'line',
                 data: {
@@ -622,14 +730,35 @@
                             }
                         },
                         zoom: { 
-                            limits: { x: { min: age, max: age + 100 }, y: { min: 0 } },
-                            zoom: { wheel: { enabled: true, speed: 0.05 }, pinch: { enabled: true }, mode: 'x' }, 
-                            pan: { enabled: true, mode: 'x', threshold: 10 } 
+                            limits: {
+                                x: { min: age, max: age + 100 } 
+                            },
+                            zoom: { 
+                                wheel: { enabled: true, speed: 0.05 }, 
+                                pinch: { enabled: true }, 
+                                mode: 'x',
+                                drag: { enabled: true, borderColor: 'rgba(225,225,225,0.3)', borderWidth: 5, backgroundColor: 'rgba(225,225,225,0.1)' } // マウスドラッグ対応
+                            }, 
+                            pan: { 
+                                enabled: true, 
+                                mode: 'x', 
+                                threshold: 0 // 即座に反応
+                            } 
                         }
                     }, 
                     scales:{
-                        x:{ grid:{display:false}, ticks:{color:'#64748b'}, min: age, max: initialMaxAge }, 
-                        y:{ beginAtZero: true, stacked:false, grid:{color:'#1e293b'}, ticks:{color:'#64748b'} }
+                        x:{
+                            grid:{display:false},
+                            ticks:{color:'#64748b'},
+                            min: age,         
+                            max: initialMaxAge 
+                        }, 
+                        y:{
+                            beginAtZero: true, 
+                            stacked:false, 
+                            grid:{color:'#1e293b'},
+                            ticks:{color:'#64748b'}
+                        }
                     }, 
                 }
             };
@@ -645,13 +774,19 @@
             if(canvasMob) {
                 const ctxMob = canvasMob.getContext('2d');
                 if(myChartMobile) myChartMobile.destroy();
+                
                 const configMob = {
                     type: config.type,
-                    data: { labels: config.data.labels, datasets: config.data.datasets.map(d => ({...d})) },
+                    data: {
+                        labels: config.data.labels,
+                        datasets: config.data.datasets.map(d => ({...d}))
+                    },
                     plugins: [targetLinePlugin],
                     options: JSON.parse(JSON.stringify(config.options))
                 };
+                
                 configMob.options.plugins.tooltip.callbacks = config.options.plugins.tooltip.callbacks;
+
                 myChartMobile = new Chart(ctxMob, configMob);
             }
         }
