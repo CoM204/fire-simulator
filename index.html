@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v36.0 - Layout Fix Final</title>
+    <title>FIRE Simulator v41.0 - No Overlap Block</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -52,7 +52,7 @@
             overflow: hidden; 
             padding: 0 20px 0 20px; 
             max-width: none; 
-            width: 100%;
+            margin: 0; 
         }
 
         .input-column { 
@@ -62,26 +62,25 @@
             padding-bottom: 50px; 
         }
 
-        /* 右カラム修正: Flexboxで縦並び・Gapで隙間確保・重なり防止 */
+        /* 右カラム修正: Block表示で単純に積み上げる (重なり防止の決定版) */
         .result-column { 
-            display: flex; 
-            flex-direction: column;
-            justify-content: flex-start; /* 上詰め */
-            gap: 24px; /* 要素間に必ず24pxの隙間を確保 */
+            display: block; 
             height: 100%; 
             overflow-y: auto; 
             padding-right: 10px;
-            padding-bottom: 50px;
+            padding-bottom: 20px; /* 右下の余白を最小限に */
         }
         
-        .header-area { flex: 0 0 auto; }
+        /* 各セクションのマージンで間隔を確保 */
+        .header-area { 
+            margin-bottom: 8px;
+        }
         
         .main-chart-container { 
             position: relative; 
             width: 100%; 
             height: 450px; /* 固定高さ */
-            flex-shrink: 0; /* 縮小禁止 */
-            background: transparent;
+            margin-bottom: 24px; /* 下に余白 */
         }
 
         .sub-charts-container { 
@@ -89,13 +88,12 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             height: 240px; 
-            flex-shrink: 0; /* 縮小禁止 */
+            margin-bottom: 24px; /* 下に余白 */
         }
 
         .result-summary-card { 
             width: 100%;
-            flex-shrink: 0; /* 縮小禁止 */
-            /* position: static で配置されるため重ならない */
+            margin-bottom: 0; /* 最後なので余白なし */
         }
 
         .mobile-chart-only { display: none; }
@@ -119,16 +117,14 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v36.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v41.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
     <div class="lg:hidden p-4 mobile-chart-only">
-        <!-- グラフ -->
         <div class="glass-card p-2 h-[280px] relative mb-4">
             <canvas id="chartCanvasMobile"></canvas>
         </div>
-        <!-- 資産ピーク・100歳時点 (モバイル用) -->
         <div class="glass-card p-4">
             <div class="grid grid-cols-2 gap-4 text-center">
                 <div>
@@ -265,7 +261,7 @@
             </div>
             
             <!-- メインチャート -->
-            <div class="glass-card p-2 mb-4 main-chart-container hidden lg:block">
+            <div class="glass-card p-2 main-chart-container hidden lg:block">
                 <canvas id="chartCanvas"></canvas>
             </div>
 
@@ -311,8 +307,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v36';
-        const CONFIG_KEY = 'simulatorConfig_v36';
+        const STORAGE_KEY = 'simulatorState_v41';
+        const CONFIG_KEY = 'simulatorConfig_v41';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -443,6 +439,12 @@
         function syncNum(id, v) { document.getElementById(id).value=v; calculate(false); }
         function syncRange(id, v) { document.getElementById(id).value=Math.max(0,Math.min(100,v)); calculate(false); }
 
+        function updateTotalBar() { 
+            let t=0; getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
+            const bar = document.getElementById('totalProgressBar');
+            if(bar) bar.style.width=Math.min(t,100)+'%'; 
+        }
+
         function calculate(skipMainChart = false) {
             updateTotalBar(); saveState();
             const assets = getActiveAssets();
@@ -546,10 +548,12 @@
 
             renderAchievement(rAge);
             
+            // Skip logic for main chart update
             if (!skipMainChart) {
                 drawMainChart(hAge, hTotal, hPrin);
             }
 
+            // Always update subcharts for responsive feedback
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
@@ -571,25 +575,13 @@
             calculate(true); 
         }
 
-        function updateTotalBar() { 
-            let t=0; getActiveAssets().forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); 
-            document.getElementById('totalProgressBar').style.width=Math.min(t,100)+'%'; 
-        }
-        function applyPreset(t) { 
-            if(inputMode === 'amount') { alert('プリセットは％指定モードでのみ使用できます'); return; }
-            let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; 
-            getActiveAssets().forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); 
-            calculate(false); 
-        }
-
         const targetLinePlugin = {
             id: 'targetLine',
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
-                const index = graduationIndex;
-                if (index >= chart.data.labels.length) return;
                 
+                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
@@ -621,7 +613,7 @@
         };
 
         function drawMainChart(labels, dTotal, dPrin) {
-            if(!document.getElementById('chartCanvas')) return;
+            // Config作成
             const config = {
                 type: 'line',
                 data: {
@@ -665,12 +657,34 @@
                     scales:{x:{grid:{display:false},ticks:{color:'#64748b'}}, y:{beginAtZero: true, stacked:false, grid:{color:'#1e293b'},ticks:{color:'#64748b'}}}, 
                 }
             };
-            const ctx = document.getElementById('chartCanvas').getContext('2d');
-            if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, config);
-            const ctxMob = document.getElementById('chartCanvasMobile').getContext('2d');
-            if(myChartMobile) myChartMobile.destroy();
-            myChartMobile = new Chart(ctxMob, JSON.parse(JSON.stringify(config)));
+
+            // PC用描画
+            const canvasPC = document.getElementById('chartCanvas');
+            if(canvasPC) {
+                const ctx = canvasPC.getContext('2d');
+                if(myChart) myChart.destroy();
+                myChart = new Chart(ctx, config);
+            }
+
+            // モバイル用描画
+            const canvasMob = document.getElementById('chartCanvasMobile');
+            if(canvasMob) {
+                const ctxMob = canvasMob.getContext('2d');
+                if(myChartMobile) myChartMobile.destroy();
+                
+                // プラグイン設定を含めた設定のコピー
+                const configMob = {
+                    type: config.type,
+                    data: {
+                        labels: config.data.labels,
+                        datasets: config.data.datasets.map(d => ({...d}))
+                    },
+                    plugins: [targetLinePlugin],
+                    options: config.options
+                };
+
+                myChartMobile = new Chart(ctxMob, configMob);
+            }
         }
 
         function updateSubCharts(retVal, crashVal, pfData) {
