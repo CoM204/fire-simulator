@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v11.0 - Asset Manager</title>
+    <title>FIRE Simulator v12.0 - Amount Input</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,8 +12,7 @@
         body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Inter', 'Noto Sans JP', sans-serif; padding-bottom: 120px; background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); background-attachment: fixed; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
-        .glass-btn { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; transition: all 0.2s; }
-        .glass-btn:hover { background: rgba(59, 130, 246, 0.4); }
+        .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; border: 2px solid #1e293b; }
@@ -22,26 +21,24 @@
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
         @media (min-width: 1024px) {
-            .container-grid { display: grid; grid-template-columns: 350px 1fr; gap: 24px; max-width: 1200px; margin: 0 auto; align-items: start; }
+            .container-grid { display: grid; grid-template-columns: 360px 1fr; gap: 24px; max-width: 1200px; margin: 0 auto; align-items: start; }
             .chart-area { position: sticky; top: 20px; }
             .sub-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             .sticky-result { position: static !important; background: transparent !important; padding: 0 !important; margin-top: 20px; border: none !important; }
             .mobile-chart-only { display: none; }
         }
         .sticky-result { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(11, 15, 25, 0.95); padding: 12px; z-index: 50; border-top: 1px solid rgba(255,255,255,0.1); }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 10px; }
-        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        /* スクロールバー装飾 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        #chartModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #3b82f6; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3b82f6; }
     </style>
 </head>
 <body class="p-4">
 
-    <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto flex justify-between items-center">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v11.0</span></h1>
-        <button onclick="openRecordModal()" class="lg:hidden bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg shadow-blue-500/30">＋ 資産記録</button>
+    <header class="mb-6 text-center lg:text-left lg:max-w-[1200px] lg:mx-auto">
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v12.0</span></h1>
     </header>
 
     <div class="lg:hidden mb-6 mobile-chart-only">
@@ -52,41 +49,10 @@
 
     <div class="container-grid">
         <div class="input-column">
-            
-            <div class="glass-card p-4 mb-5 border-emerald-500/20">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center"><div class="w-1 h-4 bg-emerald-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-emerald-300">ASSET MANAGER</h2></div>
-                    <button onclick="openRecordModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] px-3 py-1 rounded font-bold transition-colors">＋ 記録・詳細入力</button>
-                </div>
-                
-                <div class="bg-slate-900/40 rounded-lg p-3 mb-3">
-                    <p class="text-[10px] text-gray-400 font-bold mb-2">履歴比較 (変化を確認)</p>
-                    <div class="flex gap-2 items-center mb-2">
-                        <select id="compareDate1" class="glass-input text-[10px] h-8" onchange="updateComparison()"></select>
-                        <span class="text-gray-500">vs</span>
-                        <select id="compareDate2" class="glass-input text-[10px] h-8" onchange="updateComparison()"></select>
-                    </div>
-                    <div id="comparisonResult" class="hidden">
-                        <div class="flex justify-between items-end border-b border-gray-700 pb-2 mb-2">
-                            <span class="text-[10px] text-gray-400">総資産推移</span>
-                            <span id="compDiffTotal" class="text-sm font-black"></span>
-                        </div>
-                        <div id="compDiffDetail" class="space-y-1"></div>
-                    </div>
-                    <div id="comparisonEmpty" class="text-center text-[10px] text-gray-600 py-2">
-                        データが2つ以上あると比較できます
-                    </div>
-                </div>
-
-                <div class="text-center">
-                     <button onclick="loadLatestToSim()" id="btnReflectSim" class="w-full glass-btn text-[10px] py-2 rounded font-bold hidden">⬇ 最新データをシミュレーションに反映</button>
-                </div>
-            </div>
-
             <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
             <div class="glass-card p-4 mb-5">
-                <div class="flex items-center mb-3"><div class="w-1 h-4 bg-blue-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-blue-300">SIMULATION PROFILE</h2></div>
+                <div class="flex items-center mb-3"><div class="w-1 h-4 bg-blue-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-blue-300">PROFILE</h2></div>
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div><label class="text-[10px] text-gray-400 block mb-1">現在の年齢</label><input type="number" id="currentAge" value="35" class="glass-input"></div>
                     <div><label class="text-[10px] text-gray-400 block mb-1">現在資産 (万)</label><input type="number" id="initialAsset" value="1000" class="glass-input"></div>
@@ -100,19 +66,40 @@
             </div>
 
             <div class="glass-card p-4 mb-5">
-                <div class="flex items-center mb-4"><div class="w-1 h-4 bg-purple-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-purple-300">PORTFOLIO</h2></div>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center"><div class="w-1 h-4 bg-purple-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-purple-300">PORTFOLIO</h2></div>
+                    
+                    <div class="flex items-center bg-slate-900/50 rounded-lg p-1">
+                        <button onclick="setInputMode('percent')" id="btnModePercent" class="px-2 py-1 text-[10px] font-bold rounded text-white bg-blue-600">％指定</button>
+                        <button onclick="setInputMode('amount')" id="btnModeAmount" class="px-2 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white">金額指定</button>
+                    </div>
+                </div>
+
                 <div class="flex gap-2 mb-4">
                     <div id="tabCurrent" onclick="switchTab('current')" class="flex-1 tab-btn tab-active">今の資産</div>
                     <div id="tabFuture" onclick="switchTab('future')" class="flex-1 tab-btn tab-inactive">これからの積立</div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 mb-5">
-                    <button onclick="applyPreset('defensive')" class="bg-emerald-900/30 text-emerald-400 text-[10px] py-2 rounded">🛡️ 鉄壁</button>
-                    <button onclick="applyPreset('standard')" class="bg-blue-900/30 text-blue-400 text-[10px] py-2 rounded">👑 王道</button>
-                    <button onclick="applyPreset('aggressive')" class="bg-purple-900/30 text-purple-400 text-[10px] py-2 rounded">🚀 爆益</button>
+
+                <div id="uiPercentMode">
+                    <div class="grid grid-cols-3 gap-2 mb-5">
+                        <button onclick="applyPreset('defensive')" class="bg-emerald-900/30 text-emerald-400 text-[10px] py-2 rounded">🛡️ 鉄壁</button>
+                        <button onclick="applyPreset('standard')" class="bg-blue-900/30 text-blue-400 text-[10px] py-2 rounded">👑 王道</button>
+                        <button onclick="applyPreset('aggressive')" class="bg-purple-900/30 text-purple-400 text-[10px] py-2 rounded">🚀 爆益</button>
+                    </div>
+                    <div class="mb-5 bg-slate-800 rounded-full h-2 overflow-hidden"><div id="totalProgressBar" class="h-full bg-blue-500 transition-all" style="width: 100%"></div></div>
+                    <div id="containerSlidersCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
+                    <div id="containerSlidersFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
                 </div>
-                <div class="mb-5 bg-slate-800 rounded-full h-2 overflow-hidden"><div id="totalProgressBar" class="h-full bg-blue-500 transition-all" style="width: 100%"></div></div>
-                <div id="containerCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
-                <div id="containerFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
+
+                <div id="uiAmountMode" class="hidden">
+                    <p class="text-[10px] text-yellow-500 mb-2 text-center bg-yellow-900/20 py-1 rounded">金額を入力すると「現在資産」と「％」が自動計算されます</p>
+                    <div id="containerInputsCurrent" class="block"><div id="inputsCurrent" class="grid grid-cols-2 gap-3"></div></div>
+                    <div id="containerInputsFuture" class="hidden"><div id="inputsFuture" class="grid grid-cols-2 gap-3"></div></div>
+                    <div class="mt-4 text-center">
+                        <p class="text-[10px] text-gray-400">合計</p>
+                        <p class="text-xl font-black text-white"><span id="amountModeTotal">0</span> <span class="text-xs">万円</span></p>
+                    </div>
+                </div>
                 
                 <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
                     <div class="bg-slate-800/40 p-2 rounded-lg">
@@ -156,11 +143,6 @@
                     <input type="file" id="importFile" style="display: none;" onchange="importSettings(this)">
                 </div>
             </div>
-            
-            <div class="space-y-3 mb-10 lg:mb-0 text-center">
-                <a href="#" class="block bg-gradient-to-r from-blue-700 to-blue-600 p-3 rounded-lg text-white font-bold text-xs">SBI証券 口座開設 (PR)</a>
-                <a href="#" class="block bg-gradient-to-r from-emerald-700 to-emerald-600 p-3 rounded-lg text-white font-bold text-xs">三井住友カード (PR)</a>
-            </div>
         </div>
 
         <div class="result-column chart-area">
@@ -198,44 +180,15 @@
 
     <div id="chartModal"><div class="w-full max-w-lg flex justify-between items-center mb-4 px-2"><span class="text-[10px] text-gray-400 font-bold">FULL SCREEN CHART</span><button onclick="closeChartModal()" class="bg-red-500/20 text-red-400 px-4 py-1 rounded-full text-xs font-bold">✕ 閉じる</button></div><canvas id="modalChartCanvas"></canvas></div>
 
-    <div id="recordModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-black text-white">資産データの記録</h3>
-                <button onclick="closeRecordModal()" class="text-gray-400 hover:text-white">✕</button>
-            </div>
-            
-            <div class="mb-4">
-                <label class="text-[10px] text-gray-400 block mb-1">記録日</label>
-                <input type="date" id="recordDate" class="glass-input text-left w-full">
-            </div>
-
-            <div class="bg-slate-900/50 p-3 rounded-lg mb-4">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold text-gray-300">項目別入力 (万円)</span>
-                    <span class="text-xs font-bold text-blue-400">合計: <span id="recordTotalDisplay">0</span>万</span>
-                </div>
-                <div id="assetInputsList" class="grid grid-cols-2 gap-3">
-                    </div>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="saveRecord()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm">保存する</button>
-                <button onclick="deleteRecord()" id="btnDeleteRecord" class="bg-red-900/50 text-red-400 px-4 rounded-lg text-xs hidden">削除</button>
-            </div>
-
-            <hr class="border-gray-700 my-4">
-            
-            <h4 class="text-xs font-bold text-gray-400 mb-2">保存済みデータ履歴</h4>
-            <div id="historyListModal" class="max-h-[150px] overflow-y-auto space-y-2">
-                </div>
-        </div>
-    </div>
-
     <script>
-        Chart.unregister(ChartDataLabels);
+        // 【重要】グラフ表示エラー回避のための初期化処理
+        try {
+            if (typeof ChartDataLabels !== 'undefined') {
+                Chart.unregister(ChartDataLabels);
+            }
+        } catch(e) { console.error("Plugin error", e); }
 
-        const STORAGE_KEY = 'simulatorState_v11';
+        const STORAGE_KEY = 'simulatorState_v12';
         const ASSETS = [
             { key: 'cash', name: '💴 現金', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
             { key: 'bond', name: '📜 債券', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
@@ -252,26 +205,138 @@
         ];
 
         let activeTab = 'current';
+        let inputMode = 'percent'; // 'percent' or 'amount'
         let myChart = null, myChartMobile = null, pfChart = null, rrChart = null, modalChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
-        let historyRecords = []; // New Data Structure: [{date: '2025-02-01', total: 1000, assets: {cash: 500, sp500: 500}}]
+        let actualHistory = [];
 
         window.onload = () => {
-            // Set today's date for input
-            document.getElementById('recordDate').valueAsDate = new Date();
-
             document.querySelectorAll('input, select').forEach(el => {
-                if(!el.closest('#recordModal')) el.addEventListener(el.type==='range'?'input':'change', calculate);
+                if(el.id.startsWith('amt_')) return; // amount inputs handled separately
+                el.addEventListener(el.type==='range'?'input':'change', calculate);
             });
             
-            renderSliders('current'); 
-            renderSliders('future'); 
-            renderAssetInputs();
+            renderSliders('current'); renderSliders('future');
+            renderAmountInputs('current'); renderAmountInputs('future');
             loadState(); 
+            setInputMode('percent'); // default
             calculate();
         };
 
-        // --- Core Simulation Logic ---
+        // --- Input Mode Switching ---
+        function setInputMode(mode) {
+            inputMode = mode;
+            const isPct = mode === 'percent';
+            
+            // Toggle Buttons
+            document.getElementById('btnModePercent').className = isPct ? "px-2 py-1 text-[10px] font-bold rounded text-white bg-blue-600" : "px-2 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white";
+            document.getElementById('btnModeAmount').className = !isPct ? "px-2 py-1 text-[10px] font-bold rounded text-white bg-blue-600" : "px-2 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-white";
+
+            // Show/Hide Containers
+            document.getElementById('uiPercentMode').classList.toggle('hidden', !isPct);
+            document.getElementById('uiAmountMode').classList.toggle('hidden', isPct);
+
+            // Sync Logic
+            if(isPct) {
+                // Switching TO Percent Mode: Calculate Percentages from Amounts
+                syncAmountsToPercent();
+                document.getElementById('initialAsset').disabled = false;
+                document.getElementById('monthlyAdd').disabled = false;
+            } else {
+                // Switching TO Amount Mode: Calculate Amounts from Percentages
+                syncPercentToAmounts();
+                // In Amount Mode, Total Asset & Monthly Add are derived from sums
+                if(activeTab === 'current') document.getElementById('initialAsset').disabled = true;
+                if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true;
+            }
+        }
+
+        function renderAmountInputs(type) {
+            const container = document.getElementById(type === 'current' ? 'inputsCurrent' : 'inputsFuture');
+            container.innerHTML = ASSETS.map(a => `
+                <div>
+                    <label class="text-[10px] text-gray-500 block mb-0.5" style="color:${a.color}">${a.name}</label>
+                    <input type="number" id="amt_${type}_${a.key}" class="glass-input text-right text-sm" placeholder="0" oninput="onAmountInput('${type}')">
+                </div>
+            `).join('');
+        }
+
+        function onAmountInput(type) {
+            // Calculate Total
+            let total = 0;
+            ASSETS.forEach(a => {
+                total += Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0;
+            });
+            
+            document.getElementById('amountModeTotal').innerText = total.toLocaleString();
+
+            // Update Main Inputs based on Type
+            if(type === 'current') {
+                document.getElementById('initialAsset').value = total;
+            } else {
+                document.getElementById('monthlyAdd').value = total;
+            }
+
+            // Update Percent Sliders (Hidden but needed for calculation)
+            if(total > 0) {
+                ASSETS.forEach(a => {
+                    const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0;
+                    const pct = (val / total) * 100;
+                    document.getElementById(`range_${type}_${a.key}`).value = pct;
+                    document.getElementById(`num_${type}_${a.key}`).value = pct.toFixed(1);
+                });
+            } else {
+                // If total is 0, reset weights
+                ASSETS.forEach(a => {
+                    document.getElementById(`range_${type}_${a.key}`).value = 0;
+                    document.getElementById(`num_${type}_${a.key}`).value = 0;
+                });
+            }
+            calculate();
+        }
+
+        function syncPercentToAmounts() {
+            // Percent -> Amount
+            const totalC = Number(document.getElementById('initialAsset').value) || 0;
+            const totalF = Number(document.getElementById('monthlyAdd').value) || 0;
+            
+            // Normalize current weights
+            let wC = 0; ASSETS.forEach(a => wC += Number(document.getElementById(`range_current_${a.key}`).value));
+            // Normalize future weights
+            let wF = 0; ASSETS.forEach(a => wF += Number(document.getElementById(`range_future_${a.key}`).value));
+
+            ASSETS.forEach(a => {
+                const pC = Number(document.getElementById(`range_current_${a.key}`).value);
+                const amtC = wC > 0 ? (pC / wC) * totalC : 0;
+                document.getElementById(`amt_current_${a.key}`).value = Math.round(amtC);
+
+                const pF = Number(document.getElementById(`range_future_${a.key}`).value);
+                const amtF = wF > 0 ? (pF / wF) * totalF : 0;
+                document.getElementById(`amt_future_${a.key}`).value = Math.round(amtF);
+            });
+            
+            // Update Display Total
+            const t = activeTab === 'current' ? totalC : totalF;
+            document.getElementById('amountModeTotal').innerText = t.toLocaleString();
+        }
+
+        function syncAmountsToPercent() {
+            // Trigger logic similar to input change, but just recalculate weights once
+            ['current', 'future'].forEach(type => {
+                let total = 0;
+                ASSETS.forEach(a => total += Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0);
+                if(total > 0) {
+                    ASSETS.forEach(a => {
+                        const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0;
+                        const pct = (val / total) * 100;
+                        document.getElementById(`range_${type}_${a.key}`).value = pct;
+                        document.getElementById(`num_${type}_${a.key}`).value = Math.round(pct);
+                    });
+                }
+            });
+        }
+
+        // --- Core Simulation ---
         function calculate() {
             updateTotalBar(); saveState();
             const age = +document.getElementById('currentAge').value || 35;
@@ -282,6 +347,7 @@
             const wRate = +document.getElementById('num_withdrawRate').value / 100;
             const crashCount = +document.getElementById('crashCount').value;
             
+            // Calculate Weights (Always based on Sliders/Percent Inputs as they are synced)
             let retC=0, crashC=0, totalC=0, pfDataC=[];
             ASSETS.forEach(a => { const v = +document.getElementById(`range_current_${a.key}`).value||0; totalC += v; if(v>0) pfDataC.push({name:a.name, val:v, color:a.color}); });
             ASSETS.forEach(a => { if(totalC>0){ const w=+document.getElementById(`range_current_${a.key}`).value/totalC; retC+=a.ret*w; crashC+=a.crash*w; }});
@@ -300,9 +366,9 @@
             document.getElementById('specTotalRet').innerText = expRet;
             document.getElementById('specTotalCrash').innerText = maxCrash;
 
+            // Simulation Loop
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             
-            // Crash Logic
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -339,187 +405,7 @@
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
 
-        // --- Asset Record System ---
-        function renderAssetInputs() {
-            const container = document.getElementById('assetInputsList');
-            container.innerHTML = ASSETS.map(a => `
-                <div>
-                    <label class="text-[10px] text-gray-500 block mb-0.5" style="color:${a.color}">${a.name}</label>
-                    <input type="number" id="rec_${a.key}" class="glass-input text-right text-sm rec-input" placeholder="0" oninput="calcRecordTotal()">
-                </div>
-            `).join('');
-        }
-
-        function calcRecordTotal() {
-            let total = 0;
-            ASSETS.forEach(a => {
-                total += Number(document.getElementById(`rec_${a.key}`).value) || 0;
-            });
-            document.getElementById('recordTotalDisplay').innerText = total.toLocaleString();
-        }
-
-        function openRecordModal() {
-            document.getElementById('recordModal').style.display = 'flex';
-            document.getElementById('recordDate').valueAsDate = new Date();
-            ASSETS.forEach(a => document.getElementById(`rec_${a.key}`).value = '');
-            calcRecordTotal();
-            document.getElementById('btnDeleteRecord').classList.add('hidden');
-        }
-
-        function closeRecordModal() {
-            document.getElementById('recordModal').style.display = 'none';
-        }
-
-        function saveRecord() {
-            const dateStr = document.getElementById('recordDate').value;
-            if(!dateStr) return alert('日付を入力してください');
-            
-            const assets = {};
-            let total = 0;
-            ASSETS.forEach(a => {
-                const val = Number(document.getElementById(`rec_${a.key}`).value) || 0;
-                if(val > 0) assets[a.key] = val;
-                total += val;
-            });
-
-            if(total === 0 && !confirm('合計金額が0ですが保存しますか？')) return;
-
-            // Remove existing record for same date
-            historyRecords = historyRecords.filter(r => r.date !== dateStr);
-            
-            historyRecords.push({ date: dateStr, total, assets });
-            historyRecords.sort((a,b) => new Date(a.date) - new Date(b.date));
-            
-            saveState();
-            updateHistoryUI();
-            closeRecordModal();
-            alert('保存しました');
-        }
-
-        function deleteRecord() {
-            const dateStr = document.getElementById('recordDate').value;
-            if(confirm('この日の記録を削除しますか？')) {
-                historyRecords = historyRecords.filter(r => r.date !== dateStr);
-                saveState();
-                updateHistoryUI();
-                closeRecordModal();
-            }
-        }
-
-        function loadRecordForEdit(dateStr) {
-            const r = historyRecords.find(x => x.date === dateStr);
-            if(!r) return;
-            document.getElementById('recordDate').value = r.date;
-            ASSETS.forEach(a => {
-                document.getElementById(`rec_${a.key}`).value = r.assets[a.key] || '';
-            });
-            calcRecordTotal();
-            document.getElementById('btnDeleteRecord').classList.remove('hidden');
-        }
-
-        function updateHistoryUI() {
-            // Update Modal List
-            const list = document.getElementById('historyListModal');
-            list.innerHTML = historyRecords.length === 0 ? '<p class="text-center text-xs text-gray-600">記録なし</p>' : 
-                [...historyRecords].reverse().map(r => `
-                <div class="flex justify-between items-center bg-slate-800/50 p-2 rounded cursor-pointer hover:bg-slate-700 transition-colors" onclick="loadRecordForEdit('${r.date}')">
-                    <span class="text-xs text-gray-300">${r.date}</span>
-                    <span class="text-xs font-bold text-white">${r.total.toLocaleString()}万</span>
-                </div>
-            `).join('');
-
-            // Update Comparison Selects
-            const opts = historyRecords.map(r => `<option value="${r.date}">${r.date}</option>`).join('');
-            const sel1 = document.getElementById('compareDate1');
-            const sel2 = document.getElementById('compareDate2');
-            sel1.innerHTML = opts;
-            sel2.innerHTML = opts;
-            
-            // Set defaults (Compare Last vs 2nd Last if exists)
-            if(historyRecords.length >= 2) {
-                sel1.value = historyRecords[historyRecords.length - 2].date;
-                sel2.value = historyRecords[historyRecords.length - 1].date;
-            } else if (historyRecords.length === 1) {
-                sel1.value = historyRecords[0].date;
-                sel2.value = historyRecords[0].date;
-            }
-
-            updateComparison();
-
-            // Show/Hide Reflect Button
-            document.getElementById('btnReflectSim').classList.toggle('hidden', historyRecords.length === 0);
-        }
-
-        function updateComparison() {
-            const d1 = document.getElementById('compareDate1').value;
-            const d2 = document.getElementById('compareDate2').value;
-            const r1 = historyRecords.find(r => r.date === d1);
-            const r2 = historyRecords.find(r => r.date === d2);
-            
-            const divRes = document.getElementById('comparisonResult');
-            const divEmp = document.getElementById('comparisonEmpty');
-            const divDet = document.getElementById('compDiffDetail');
-
-            if(!r1 || !r2) {
-                divRes.classList.add('hidden');
-                divEmp.classList.remove('hidden');
-                return;
-            }
-
-            divEmp.classList.add('hidden');
-            divRes.classList.remove('hidden');
-
-            // Total Diff
-            const diff = r2.total - r1.total;
-            const pDiff = r1.total > 0 ? ((diff / r1.total) * 100).toFixed(1) : 0;
-            const spanDiff = document.getElementById('compDiffTotal');
-            spanDiff.innerText = `${diff>=0?'+':''}${diff.toLocaleString()}万 (${diff>=0?'+':''}${pDiff}%)`;
-            spanDiff.className = `text-sm font-black ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`;
-
-            // Detail Diff
-            let html = '';
-            ASSETS.forEach(a => {
-                const v1 = r1.assets[a.key] || 0;
-                const v2 = r2.assets[a.key] || 0;
-                const d = v2 - v1;
-                if(v1 > 0 || v2 > 0) {
-                    html += `
-                        <div class="flex justify-between items-center text-[10px]">
-                            <span class="text-gray-400">${a.name}</span>
-                            <span class="${d>=0?'text-gray-200':'text-red-300'}">${d>=0?'+':''}${d.toLocaleString()}</span>
-                        </div>
-                    `;
-                }
-            });
-            divDet.innerHTML = html;
-        }
-
-        function loadLatestToSim() {
-            if(historyRecords.length === 0) return;
-            const latest = historyRecords[historyRecords.length - 1];
-            
-            if(!confirm(`最新データ (${latest.date}) をシミュレーションの「現在資産」と「今のPF」に反映しますか？`)) return;
-
-            // Update Total
-            document.getElementById('initialAsset').value = latest.total;
-
-            // Update PF Sliders
-            let total = latest.total;
-            if(total > 0) {
-                ASSETS.forEach(a => {
-                    const val = latest.assets[a.key] || 0;
-                    // Calculate percentage integer (0-100)
-                    const pct = Math.round((val / total) * 100);
-                    document.getElementById(`range_current_${a.key}`).value = pct;
-                    document.getElementById(`num_current_${a.key}`).value = pct;
-                });
-            }
-
-            calculate();
-            alert('反映しました');
-        }
-
-        // --- Standard UI Functions ---
+        // --- Standard UI ---
         function renderSliders(type) {
             const el = document.getElementById(type === 'current' ? 'slidersCurrent' : 'slidersFuture');
             el.innerHTML = ASSETS.map(a => `
@@ -533,20 +419,37 @@
         
         function switchTab(t) { 
             activeTab=t; 
-            document.getElementById('containerCurrent').classList.toggle('hidden', t!=='current'); 
-            document.getElementById('containerFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('containerSlidersCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerSlidersFuture').classList.toggle('hidden', t!=='future'); 
+            document.getElementById('containerInputsCurrent').classList.toggle('hidden', t!=='current'); 
+            document.getElementById('containerInputsFuture').classList.toggle('hidden', t!=='future'); 
+
             document.getElementById('tabCurrent').className=t==='current'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
             document.getElementById('tabFuture').className=t==='future'?'flex-1 tab-btn tab-active':'flex-1 tab-btn tab-inactive'; 
             const suffix = t === 'current' ? '(今の資産)' : '(積立)';
             document.getElementById('chartLabelType').innerText = suffix;
             document.getElementById('riskLabelType').innerText = suffix;
+            
+            // Re-calculate inputs if in Amount Mode
+            if(inputMode === 'amount') {
+                document.getElementById('initialAsset').disabled = t === 'current';
+                document.getElementById('monthlyAdd').disabled = t === 'future';
+                syncPercentToAmounts();
+            }
             updateTotalBar(); calculate(); 
         }
 
         function updateTotalBar() { let t=0; ASSETS.forEach(a=>t+=parseInt(document.getElementById(`range_${activeTab}_${a.key}`).value)||0); document.getElementById('totalProgressBar').style.width=Math.min(t,100)+'%'; }
-        function applyPreset(t) { let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; ASSETS.forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); calculate(); }
+        function applyPreset(t) { 
+            if(inputMode === 'amount') { alert('プリセットは％指定モードでのみ使用できます'); return; }
+            let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; 
+            ASSETS.forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); 
+            calculate(); 
+        }
 
+        // --- Charts ---
         function drawMainChart(labels, dTotal, dPrin) {
+            if(!document.getElementById('chartCanvas')) return;
             const config = {
                 type: 'line',
                 data: {
@@ -586,7 +489,7 @@
                 },
                 options: { 
                     responsive:true, maintainAspectRatio:false, 
-                    plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + val + '%', anchor: 'center', align: 'center' } }, 
+                    plugins:{ legend:{display:false}, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + Math.round(val) + '%', anchor: 'center', align: 'center' } }, 
                     cutout:'50%' 
                 }
             });
@@ -609,16 +512,8 @@
 
         function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[0].data]; alert('固定しました'); calculate(); } }
         function renderAchievement(age) { document.getElementById('achievementMobile').innerHTML = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`; document.getElementById('achievementDesktop').innerHTML = document.getElementById('achievementMobile').innerHTML; }
-        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentAge:document.getElementById('currentAge').value, historyRecords })); } 
-        function loadState() { 
-            try { 
-                const s=JSON.parse(localStorage.getItem(STORAGE_KEY)); 
-                if(s) {
-                    if(s.historyRecords) historyRecords = s.historyRecords;
-                    updateHistoryUI();
-                }
-            } catch(e){} 
-        }
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentAge:document.getElementById('currentAge').value })); } 
+        function loadState() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e){} }
         function exportSettings() { const s=localStorage.getItem(STORAGE_KEY); if(s){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([s],{type:'application/json'})); a.download='fire_sim_data.json'; a.click(); } }
         function triggerImport() { document.getElementById('importFile').click(); }
         function importSettings(e) { const r=new FileReader(); r.onload=function(e){localStorage.setItem(STORAGE_KEY,e.target.result); loadState(); calculate(); alert('データを読み込みました');}; r.readAsText(e.files[0]); }
