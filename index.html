@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.1 - Zoom Fix</title>
+    <title>FIRE Simulator v70.5 - Age 75 Limit</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -11,6 +11,8 @@
     <!-- プラグイン: ズーム機能 (安定版 v1.2.1 + Hammer.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
+    <!-- Markdown Parser (marked) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -22,19 +24,26 @@
             background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
             background-attachment: fixed; 
             margin: 0;
-            min-height: 100vh;
-            overflow-y: auto; 
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+        }
+
+        @media (max-width: 1023px) {
+            body {
+                overflow-y: auto;
+                height: auto;
+            }
         }
 
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
         .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+        .ai-modal-content { background: #1e293b; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 24px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 50px rgba(139, 92, 246, 0.2); }
         
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
@@ -44,31 +53,40 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        header { padding: 1rem 2rem; flex: 0 0 auto; }
+        header { padding: 1rem 2rem; flex: 0 0 auto; z-index: 10; }
 
         @media (min-width: 1024px) {
             .container-grid { 
                 display: grid; 
                 grid-template-columns: 500px 1fr; 
                 gap: 40px; 
-                padding: 0 40px 40px 40px; 
+                padding: 0 40px 20px 40px; 
                 max-width: 1600px; 
                 margin: 0 auto;
                 align-items: start;
+                height: calc(100vh - 80px);
+                width: 100%;
             }
-            .input-column { height: auto; }
+            .input-column { 
+                height: 100%;
+                overflow-y: auto; 
+                padding-right: 10px; 
+                padding-bottom: 40px;
+            }
             .result-column {
-                height: auto;
+                height: 100%;
+                overflow-y: auto; 
                 display: flex;
                 flex-direction: column;
                 gap: 30px; 
                 padding-bottom: 40px; 
+                padding-right: 10px;
             }
         }
 
         @media (max-width: 1023px) {
-            .container-grid { display: block; padding: 16px; }
-            .input-column { margin-bottom: 40px; }
+            .container-grid { display: block; padding: 16px; height: auto; }
+            .input-column { margin-bottom: 40px; height: auto; overflow-y: visible; }
             .mobile-chart-only { display: block; margin-bottom: 30px; }
             .pc-only { display: none !important; }
             .result-column { display: none; } 
@@ -79,11 +97,10 @@
             width: 100%; 
             height: 450px; 
             margin: 0;
-            cursor: grab; /* 掴めるアイコン */
+            cursor: grab; 
+            touch-action: none;
         }
-        .main-chart-container:active {
-            cursor: grabbing; /* 掴んだアイコン */
-        }
+        .main-chart-container:active { cursor: grabbing; }
 
         .sub-charts-container { 
             display: grid;
@@ -126,14 +143,38 @@
         }
 
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.5); }
+
+        /* Markdown Styles */
+        .markdown-body { font-size: 14px; line-height: 1.6; color: #e2e8f0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; color: #fff; }
+        .markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid #4b5563; padding-bottom: 0.3em; }
+        .markdown-body h2 { font-size: 1.3em; }
+        .markdown-body h3 { font-size: 1.1em; }
+        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body li { margin-bottom: 0.5em; }
+        .markdown-body strong { color: #60a5fa; font-weight: 700; }
+        .markdown-body em { font-style: italic; color: #f472b6; }
+        .markdown-body blockquote { border-left: 4px solid #6b7280; padding-left: 1em; color: #9ca3af; margin: 1em 0; }
+        
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.1</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.5</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -160,7 +201,7 @@
     </div>
 
     <div class="container-grid">
-        <!-- 左カラム：入力 -->
+        <!-- 左カラム：入力 (スクロール可能) -->
         <div class="input-column">
             <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
@@ -275,6 +316,13 @@
                     </label>
                 </div>
 
+                <!-- ✨ AI Coach Button -->
+                <div class="mb-4">
+                    <button onclick="getAIAdvice()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]">
+                        <span>✨</span> AIコーチングを受ける
+                    </button>
+                </div>
+
                 <h2 class="text-xs font-bold text-blue-300 mb-2">SHARE</h2>
                 <div class="flex gap-2">
                     <button onclick="shareToX()" class="flex-1 bg-black text-white text-xs font-bold py-2 rounded border border-gray-700">X ポスト</button>
@@ -288,7 +336,7 @@
             </div>
         </div>
 
-        <!-- 右カラム：結果・グラフ (PC用) -->
+        <!-- 右カラム：結果・グラフ (PC用: 基本固定、必要に応じて内部スクロール) -->
         <div class="result-column pc-only">
             <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
@@ -344,6 +392,24 @@
         </div>
     </div>
 
+    <!-- AI ADVICE MODAL -->
+    <div id="aiModal" class="modal-overlay">
+        <div class="ai-modal-content relative">
+            <button onclick="closeAIModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-gradient-to-br from-violet-500 to-fuchsia-500 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg">✨</div>
+                <div>
+                    <h3 class="text-xl font-black text-white">AI Coach</h3>
+                    <p class="text-xs text-violet-300">Powered by Gemini 2.0 Flash</p>
+                </div>
+            </div>
+            
+            <div id="aiContent" class="markdown-body min-h-[150px]">
+                <p class="text-gray-400 text-center mt-10 loading-dots">シミュレーション結果を分析中...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
@@ -372,6 +438,9 @@
         let myChart = null, myChartMobile = null, pfChart = null, rrChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
         let graduationIndex = null; 
+        
+        // For AI Analysis context
+        let currentAnalysisContext = {};
 
         window.onload = () => {
             // Zoomプラグインの登録
@@ -535,15 +604,50 @@
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
+                    // 全期間（100歳まで）の配列生成
                     let arr = Array.from({length:100-age},(_,i)=>i+1);
-                    if(document.getElementById('crashTimingMode').value==='random') arr.sort(()=>Math.random()-0.5);
-                    else if(document.getElementById('crashTimingMode').value==='early') arr=arr.map((_,i)=>(i+1)*2);
-                    else if(document.getElementById('crashTimingMode').value==='middle') {
-                        const mid = Math.floor(arr.length / 2);
-                        arr = arr.filter(n => n >= mid - 10 && n <= mid + 10);
+                    
+                    // --- ユーザー要望対応: 暴落は75歳までに収める ---
+                    // ただし期間が短くなりすぎる場合（現在年齢が高い等）は最低限の期間を確保
+                    const crashCapAge = 75;
+                    const minDuration = 15; // 最低でも15年は暴落候補期間として見る
+                    
+                    // 75歳までの年数
+                    let validYears = crashCapAge - age;
+                    // もし75歳までが15年未満なら、15年に延長（ただし100歳は超えない）
+                    if (validYears < minDuration) validYears = minDuration;
+                    if (validYears > 100 - age) validYears = 100 - age;
+                    
+                    // 配列をカット
+                    arr = arr.slice(0, validYears);
+                    // ---------------------------------------------
+
+                    if(document.getElementById('crashTimingMode').value==='random') {
+                        arr.sort(()=>Math.random()-0.5);
                     }
-                    else arr=arr.reverse().map((_,i)=>(i+1)*2);
-                    memoCrashYears = arr.slice(0, crashCount); memoCrashKey=key;
+                    else if(document.getElementById('crashTimingMode').value==='early') {
+                        // 序盤: 前半1/3
+                        const boundary = Math.ceil(arr.length / 3);
+                        arr = arr.slice(0, boundary);
+                        arr.sort(()=>Math.random()-0.5); // 範囲内でランダム
+                    }
+                    else if(document.getElementById('crashTimingMode').value==='middle') {
+                        // 中盤: 真ん中1/3
+                        const start = Math.floor(arr.length / 3);
+                        const end = Math.floor(arr.length * 2 / 3);
+                        arr = arr.slice(start, end);
+                        arr.sort(()=>Math.random()-0.5);
+                    }
+                    else { // late
+                        // 終盤: 後半1/3 (75歳キャップがあるので、55-75歳くらいになるはず)
+                        const start = Math.floor(arr.length * 2 / 3);
+                        arr = arr.slice(start);
+                        arr.sort(()=>Math.random()-0.5);
+                    }
+                    
+                    // 暴落回数分だけ取得
+                    memoCrashYears = arr.slice(0, crashCount); 
+                    memoCrashKey=key;
                 }
             } else { memoCrashYears=[]; memoCrashKey=''; }
 
@@ -590,6 +694,23 @@
                     gAge = age + i;
                 }
             }
+
+            // Save Analysis Context
+            currentAnalysisContext = {
+                profile: {
+                    age: age,
+                    initialAsset: init / 10000,
+                    monthlyAdd: monthly / 10000,
+                    targetAsset: target / 10000
+                },
+                result: {
+                    peak: Math.round(peak/10000),
+                    end: Math.round(hTotal[hTotal.length-1]/10000),
+                    graduationAge: rAge,
+                    isSuccess: !!rAge
+                },
+                portfolio: pfDataF.map(p => `${p.name}: ${Math.round(p.val)}%`).join(', ')
+            };
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
@@ -737,22 +858,22 @@
                         zoom: { 
                             pan: {
                                 enabled: true,
-                                mode: 'x',
-                                modifierKey: null,
-                                threshold: 10
+                                mode: 'xy', // 縦横両方のパンを許可
+                                threshold: 10, // 誤動作防止の閾値
                             },
                             zoom: {
                                 wheel: {
-                                    enabled: true, // ホイールでのズームを有効化
+                                    enabled: true, 
+                                    speed: 0.1, 
                                 },
                                 pinch: {
-                                    enabled: true // タッチでのズームを有効化
+                                    enabled: true 
                                 },
-                                mode: 'x',
+                                mode: 'xy', // 縦横両方のズームを許可
                             },
                             limits: {
                                 x: { min: age - 5, max: age + 100 + 5 },
-                                y: { min: 0 }
+                                y: { min: 0 } // マイナス表示は防ぐ
                             }
                         }
                     }, 
@@ -801,6 +922,18 @@
             }
         }
 
+        // --- Helper: Date Formatter ---
+        function getFormattedDate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const h = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            return `${y}${m}${d}_${h}${min}${s}`;
+        }
+        
         // --- Data Management Fix (Updated) ---
         function getSettingsFromUI() {
             const data = {
@@ -922,7 +1055,7 @@
             const blob = new Blob([JSON.stringify(data)],{type:'application/json'}); 
             const a = document.createElement('a'); 
             a.href = URL.createObjectURL(blob); 
-            a.download = 'fire_sim_data.json'; 
+            a.download = `fire_sim_data_${getFormattedDate()}.json`; // 日時付きファイル名
             a.click(); 
         }
         function triggerImport() { document.getElementById('importFile').click(); }
@@ -938,8 +1071,113 @@
             }; 
             r.readAsText(e.files[0]); 
         }
-        function downloadChart() { const a=document.createElement('a'); a.href=document.getElementById('chartCanvas').toDataURL(); a.download='chart.png'; a.click(); }
+        function downloadChart() { 
+            const a=document.createElement('a'); 
+            a.href=document.getElementById('chartCanvas').toDataURL(); 
+            a.download=`chart_${getFormattedDate()}.png`; // 日時付きファイル名
+            a.click(); 
+        }
         function rerollCrash() { memoCrashYears=[]; calculate(false); }
+
+        // --- GEMINI API INTEGRATION ---
+        
+        function openAIModal() {
+            document.getElementById('aiModal').style.display = 'flex';
+        }
+        function closeAIModal() {
+            document.getElementById('aiModal').style.display = 'none';
+        }
+
+        async function getAIAdvice() {
+            openAIModal();
+            document.getElementById('aiContent').innerHTML = '<p class="text-gray-400 text-center mt-10 loading-dots">最強のFIREプランを生成中...</p>';
+
+            const ctx = currentAnalysisContext;
+            
+            // Construct prompt
+            let statusText = ctx.result.isSuccess ? 
+                `${ctx.result.graduationAge}歳でFIRE達成可能です。` : 
+                "目標金額には届かない見込みです。";
+
+            const prompt = `
+あなたはプロフェッショナルなファイナンシャルプランナーです。以下のユーザーのFIREシミュレーション結果をもとに、具体的で少し辛口かつユーモアのあるアドバイスを行ってください。
+
+【ユーザー情報】
+- 年齢: ${ctx.profile.age}歳
+- 現在資産: ${ctx.profile.initialAsset}万円
+- 毎月積立: ${ctx.profile.monthlyAdd}万円
+- 目標金額: ${ctx.profile.targetAsset}万円
+- 積立ポートフォリオ: ${ctx.portfolio}
+
+【シミュレーション結果】
+- 結果: ${statusText}
+- 資産ピーク: ${ctx.result.peak}万円
+- 100歳時点: ${ctx.result.end}万円
+
+【指示】
+以下の構成でアドバイスを出力してください。Markdown形式でお願いします。
+1. **現状分析**: プランの実現可能性と、ポートフォリオのリスク分析（特に暴落耐性について）。
+2. **リスク警告**: もし暴落が起きた場合にどうなるか、甘い見通しがあれば指摘してください。
+3. **具体的な改善案**: 達成確率を上げるための具体的なアクションプラン（積立額の変更、ポートフォリオの見直し、副業の推奨など）。
+4. **最後の一言**: 背中を押すような、あるいは気を引き締めるような一言。
+`;
+
+            const apiKey = ""; // API Key will be injected by the environment
+
+            try {
+                // Retry logic helper
+                const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+                    try {
+                        const response = await fetch(url, options);
+                        if (!response.ok) {
+                            if (retries > 0 && response.status !== 400 && response.status !== 403) {
+                                await new Promise(r => setTimeout(r, backoff));
+                                return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                            }
+                            throw new Error(`HTTP Error: ${response.status}`);
+                        }
+                        return response;
+                    } catch (error) {
+                        if (retries > 0) {
+                            await new Promise(r => setTimeout(r, backoff));
+                            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                        }
+                        throw error;
+                    }
+                };
+
+                const response = await fetchWithRetry(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: prompt
+                                }]
+                            }]
+                        })
+                    }
+                );
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0].content) {
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    document.getElementById('aiContent').innerHTML = marked.parse(aiText);
+                } else {
+                    document.getElementById('aiContent').innerHTML = '<p class="text-red-400 text-center">アドバイスの生成に失敗しました。もう一度お試しください。</p>';
+                }
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                document.getElementById('aiContent').innerHTML = '<p class="text-red-400 text-center">通信エラーが発生しました。ネットワーク接続を確認してください。</p>';
+            }
+        }
+
     </script>
 </body>
 </html>
