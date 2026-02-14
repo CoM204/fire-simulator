@@ -1236,11 +1236,29 @@
 
             const apiKey = ""; // API Key will be injected by the environment
 
+            // Allow manual override if env key is missing or failed
+            let currentKey = apiKey;
+            if (!currentKey) {
+                currentKey = localStorage.getItem('gemini_manual_key') || "";
+            }
+
             try {
                 // Retry logic helper
                 const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
                     try {
                         const response = await fetch(url, options);
+                        
+                        // Handle 403 specifically
+                        if (response.status === 403) {
+                            const newKey = prompt("API接続エラー(403): キーが無効または未設定です。\nGoogle Gemini APIキーを入力してください:");
+                            if (newKey) {
+                                localStorage.setItem('gemini_manual_key', newKey);
+                                // Retry with new key
+                                const newUrl = url.replace(/key=([^&]*)/, `key=${newKey}`);
+                                return fetch(newUrl, options);
+                            }
+                        }
+
                         if (!response.ok) {
                             let errorMsg = `HTTP Error: ${response.status}`;
                             try {
@@ -1267,7 +1285,7 @@
                 };
 
                 const response = await fetchWithRetry(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`,
                     {
                         method: 'POST',
                         headers: {
