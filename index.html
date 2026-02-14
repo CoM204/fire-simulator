@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.14 - Image Download Fix 3</title>
+    <title>FIRE Simulator v70.15 - Image Download Fix 4</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -177,7 +177,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.14</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.15</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -1003,7 +1003,7 @@
                         x:{
                             grid:{display:false},
                             ticks:{color:'#64748b'},
-                            min: age,          
+                            min: age,           
                             max: initialMaxAge 
                         }, 
                         y:{
@@ -1154,6 +1154,7 @@
         }
 
         function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[1].data]; alert('固定しました'); calculate(false); } }
+        function unlockComparison() { lockedData = null; alert('固定を解除しました'); calculate(false); }
         function renderAchievement(age) { document.getElementById('achievementMobile').innerHTML = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`; document.getElementById('achievementDesktop').innerHTML = document.getElementById('achievementMobile').innerHTML; }
         function saveState() { 
             const data = getSettingsFromUI();
@@ -1186,6 +1187,51 @@
             }; 
             r.readAsText(e.files[0]); 
         }
+
+        // --- Utils: Date ---
+        function getFormattedDate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = ('0' + (now.getMonth() + 1)).slice(-2);
+            const d = ('0' + now.getDate()).slice(-2);
+            const h = ('0' + now.getHours()).slice(-2);
+            const min = ('0' + now.getMinutes()).slice(-2);
+            return `${y}${m}${d}_${h}${min}`;
+        }
+
+        // --- Features: Share & Copy ---
+        function shareToX() {
+            const peak = document.getElementById('resPeakAsset').innerText;
+            const end = document.getElementById('resEndAsset').innerText;
+            const text = `FIRE Simulatorでシミュレーションしました！\n資産ピーク: ${peak}万円\n100歳時点: ${end}万円\n#FIRESimulator`;
+            const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+            window.open(url, '_blank');
+        }
+
+        function copyResult() {
+            const peak = document.getElementById('resPeakAsset').innerText;
+            const end = document.getElementById('resEndAsset').innerText;
+            const text = `資産ピーク: ${peak}万円\n100歳時点: ${end}万円`;
+            
+            // クリップボードAPIが使える場合
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(err => alert('コピー失敗'));
+            } else {
+                // フォールバック（古いブラウザやiframe制限環境用）
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    alert('コピーしました');
+                } catch (err) {
+                    alert('コピーできませんでした');
+                }
+                document.body.removeChild(ta);
+            }
+        }
+
         function downloadChart() { 
             const canvas = document.getElementById('chartCanvas');
             if (!canvas) {
