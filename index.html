@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.10 - Allocation Change</title>
+    <title>FIRE Simulator v70.11 - Image Download Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -177,7 +177,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.10</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.11</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -1187,10 +1187,28 @@
             r.readAsText(e.files[0]); 
         }
         function downloadChart() { 
-            const a=document.createElement('a'); 
-            a.href=document.getElementById('chartCanvas').toDataURL(); 
-            a.download=`chart_${getFormattedDate()}.png`; 
+            const canvas = document.getElementById('chartCanvas');
+            if (!canvas) return;
+
+            // 背景色付きで保存するための処理
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const ctx = tempCanvas.getContext('2d');
+            
+            // 背景色を塗る (bodyの背景色に合わせる)
+            ctx.fillStyle = '#0b0f19'; 
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // 元のチャートを重ねる
+            ctx.drawImage(canvas, 0, 0);
+
+            const a = document.createElement('a'); 
+            a.href = tempCanvas.toDataURL('image/png'); 
+            a.download = `chart_${getFormattedDate()}.png`; 
+            document.body.appendChild(a); // Firefox対策
             a.click(); 
+            document.body.removeChild(a);
         }
         function rerollCrash() { memoCrashYears=[]; calculate(false); }
         function openAIModal() {
