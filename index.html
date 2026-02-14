@@ -1238,15 +1238,23 @@
 
             try {
                 // Retry logic helper
-                const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+                const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
                     try {
                         const response = await fetch(url, options);
                         if (!response.ok) {
+                            let errorMsg = `HTTP Error: ${response.status}`;
+                            try {
+                                const errorData = await response.json();
+                                if (errorData.error && errorData.error.message) {
+                                    errorMsg += ` - ${errorData.error.message}`;
+                                }
+                            } catch (e) { /* ignore json parse error */ }
+                            
                             if (retries > 0 && response.status !== 400 && response.status !== 403) {
                                 await new Promise(r => setTimeout(r, backoff));
                                 return fetchWithRetry(url, options, retries - 1, backoff * 2);
                             }
-                            throw new Error(`HTTP Error: ${response.status}`);
+                            throw new Error(errorMsg);
                         }
                         return response;
                     } catch (error) {
@@ -1286,7 +1294,7 @@
 
             } catch (error) {
                 console.error("Gemini API Error:", error);
-                document.getElementById('aiContent').innerHTML = '<p class="text-red-400 text-center">通信エラーが発生しました。ネットワーク接続を確認してください。</p>';
+                document.getElementById('aiContent').innerHTML = `<p class="text-red-400 text-center">エラーが発生しました。<br><span class="text-xs text-red-500">${error.message}</span></p>`;
             }
         }
     </script>
