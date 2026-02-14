@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.5 - Age 75 Limit</title>
+    <title>FIRE Simulator v70.7 - Label Bug Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -174,7 +174,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.5</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.7</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -447,7 +447,8 @@
             if (typeof ChartZoom !== 'undefined') {
                 Chart.register(ChartZoom); 
             }
-            Chart.register(targetLinePlugin);
+            // ★修正ポイント: targetLinePlugin のグローバル登録を削除
+            // Chart.register(targetLinePlugin); 
             
             loadConfig();
             renderUI();
@@ -858,8 +859,8 @@
                         zoom: { 
                             pan: {
                                 enabled: true,
-                                mode: 'xy', // 縦横両方のパンを許可
-                                threshold: 10, // 誤動作防止の閾値
+                                mode: 'x', // X軸（左右）のみに限定して操作性を安定化
+                                threshold: 0, // 即座に反応させる
                             },
                             zoom: {
                                 wheel: {
@@ -869,11 +870,11 @@
                                 pinch: {
                                     enabled: true 
                                 },
-                                mode: 'xy', // 縦横両方のズームを許可
+                                mode: 'x', // X軸（時間軸）方向のみズーム（カーソル位置中心に安定）
                             },
                             limits: {
                                 x: { min: age - 5, max: age + 100 + 5 },
-                                y: { min: 0 } // マイナス表示は防ぐ
+                                y: { min: 0, max: 'original' } // Y軸はデータの範囲に収める
                             }
                         }
                     }, 
