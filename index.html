@@ -521,7 +521,19 @@
             renderUI(); closeConfigModal(); setInputMode(inputMode); calculate(false);
         }
 
-        function resetChartZoom() { if(myChart) myChart.resetZoom(); }
+        function resetChartZoom() { 
+            // "全期間"タブをクリックしたのと同じ挙動にする
+            const allTab = document.querySelector('#chartTabContainer button:first-child');
+            if (allTab) {
+                allTab.click();
+            } else if(myChart) {
+                myChart.resetZoom();
+                const age = +document.getElementById('currentAge').value || 35;
+                myChart.options.scales.x.min = age;
+                myChart.options.scales.x.max = 105; // Default max
+                myChart.update();
+            }
+        }
 
         function setInputMode(mode) {
             inputMode = mode;
