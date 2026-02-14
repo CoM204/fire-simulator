@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v46.0 - Save & Share Fix</title>
-    <!-- Chart.js 本体 -->
+    <title>FIRE Simulator v62.0 - Pan Logic Final Fix</title>
+    <!-- Chart.js 本体 (v3.9.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- プラグイン: ズーム機能 -->
+    <!-- プラグイン: ズーム機能 (Hammer.js必須 + Zoom v2.0.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -21,16 +21,16 @@
             font-family: 'Inter', 'Noto Sans JP', sans-serif; 
             background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
             background-attachment: fixed; 
-            min-height: 100vh;
             margin: 0;
-            overflow-y: auto; 
-            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; border-radius: 8px; width: 100%; padding: 8px; font-weight: bold; text-align: center; }
         .glass-input:disabled { background: rgba(15, 23, 42, 0.3); color: #64748b; border-color: transparent; }
-        
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
         .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
         
@@ -42,42 +42,58 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        header { padding: 1rem 2rem; }
+        header { padding: 1rem 2rem; flex: 0 0 auto; }
 
         @media (min-width: 1024px) {
             .container-grid { 
                 display: grid; 
                 grid-template-columns: 500px 1fr; 
                 gap: 40px; 
-                padding: 0 40px 40px 40px; 
+                padding: 0 40px 0 40px; 
                 max-width: 1600px; 
                 margin: 0 auto;
+                flex: 1; 
+                height: 100%; 
+                overflow: hidden; 
                 align-items: start;
             }
-            .input-column { height: auto; }
-            .result-column {
-                height: auto;
-                display: flex;
-                flex-direction: column;
-                gap: 30px; 
-                padding-bottom: 40px; 
+            .input-column { 
+                height: 100%; 
+                overflow-y: auto; 
+                padding-bottom: 100px; 
+                direction: rtl; 
+                padding-left: 10px; 
+                padding-right: 4px; 
+            }
+            .input-column > * { direction: ltr; }
+            .result-column { 
+                height: 100%; 
+                overflow-y: auto; 
+                padding-right: 10px; 
+                padding-bottom: 50px; 
+                display: block; 
             }
         }
 
         @media (max-width: 1023px) {
-            .container-grid { display: block; padding: 16px; }
-            .input-column { margin-bottom: 40px; }
+            body { height: auto; overflow-y: auto; display: block; }
+            .container-grid { display: block; padding: 16px; height: auto; }
+            .input-column { height: auto; margin-bottom: 40px; direction: ltr; padding: 0; }
+            .result-column { display: none; } 
             .mobile-chart-only { display: block; margin-bottom: 30px; }
             .pc-only { display: none !important; }
-            .result-column { display: none; } 
         }
 
         .main-chart-container { 
             position: relative; 
             width: 100%; 
             height: 450px; 
-            width: 100%;
-            margin: 0;
+            margin: 0 0 24px 0;
+            flex-shrink: 0;
+            cursor: grab;
+        }
+        .main-chart-container:active {
+            cursor: grabbing;
         }
 
         .sub-charts-container { 
@@ -85,8 +101,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 24px;
             height: 320px; 
-            width: 100%;
-            margin: 0;
+            margin: 0 0 24px 0;
             flex-shrink: 0;
         }
         
@@ -108,7 +123,7 @@
 
         .result-summary-card { 
             width: 100%;
-            margin: 0;
+            margin: 0 0 24px 0;
             padding: 24px;
             flex-shrink: 0;
         }
@@ -128,7 +143,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v46.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v62.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -155,7 +170,7 @@
     </div>
 
     <div class="container-grid">
-        <!-- 左カラム：入力 -->
+        <!-- 左カラム：入力 (独立スクロール・バー左側) -->
         <div class="input-column">
             <div id="achievementMobile" class="lg:hidden mb-4"></div>
 
@@ -245,7 +260,15 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div><label class="text-[10px] text-gray-400">取崩率(%)</label><input type="number" id="num_withdrawRate" value="4.0" class="glass-input"></div>
-                    <div><label class="text-[10px] text-gray-400">暴落時期</label><select id="crashTimingMode" class="glass-input text-xs"><option value="random">ランダム</option><option value="early">序盤</option><option value="middle">中盤</option><option value="late">終盤</option></select></div>
+                    <div>
+                        <label class="text-[10px] text-gray-400">暴落時期</label>
+                        <select id="crashTimingMode" class="glass-input text-xs" onchange="calculate(false)">
+                            <option value="random">ランダム</option>
+                            <option value="early">序盤</option>
+                            <option value="middle">中盤</option>
+                            <option value="late">終盤</option>
+                        </select>
+                    </div>
                 </div>
                 <button onclick="rerollCrash()" class="w-full bg-slate-700 text-xs py-2 rounded mb-3">🎲 暴落シナリオ再抽選</button>
                 
@@ -256,8 +279,10 @@
                 </div>
                 <div class="flex gap-2 mb-4">
                     <button onclick="exportSettings()" class="flex-1 bg-slate-700 text-white text-xs py-2 rounded">保存</button>
-                    <button onclick="triggerImport()" class="flex-1 bg-slate-700 text-white text-xs py-2 rounded">読込</button>
-                    <input type="file" id="importFile" style="display: none;" onchange="importSettings(this)">
+                    <label class="flex-1 bg-slate-700 text-white text-xs py-2 rounded text-center cursor-pointer hover:bg-slate-600 transition-colors">
+                        読込
+                        <input type="file" id="importFile" class="hidden" onchange="importSettings(this)">
+                    </label>
                 </div>
 
                 <h2 class="text-xs font-bold text-blue-300 mb-2">SHARE</h2>
@@ -332,8 +357,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v46';
-        const CONFIG_KEY = 'simulatorConfig_v46';
+        const STORAGE_KEY = 'simulatorState_v62';
+        const CONFIG_KEY = 'simulatorConfig_v62';
         
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
@@ -356,9 +381,15 @@
         let myChart = null, myChartMobile = null, pfChart = null, rrChart = null;
         let memoCrashYears = [], memoCrashKey = '', lockedData = null;
         let graduationIndex = null; 
-        let resultSummary = { peak: 0, end: 0, years: 0 };
 
+        // ページ読み込み時にプラグイン登録
         window.onload = () => {
+            // ChartZoomプラグインのグローバル登録（v2系では必須）
+            if (typeof ChartZoom !== 'undefined') {
+                Chart.register(ChartZoom);
+            }
+            Chart.register(targetLinePlugin);
+            
             loadConfig();
             renderUI();
             
@@ -370,151 +401,9 @@
             
             loadState();
             setInputMode('percent');
-            // lockedData = null; // コメントアウト：保存されていたら読み込む
             calculate(false);
         };
 
-        // --- Data Management Fix ---
-        function getSettingsFromUI() {
-            const data = {
-                currentAge: document.getElementById('currentAge').value,
-                initialAsset: document.getElementById('initialAsset').value,
-                monthlyAdd: document.getElementById('monthlyAdd').value,
-                targetAsset: document.getElementById('targetAsset').value,
-                coastFireMode: document.getElementById('coastFireMode').checked,
-                withdrawAge: document.getElementById('withdrawAge').value,
-                crashCount: document.getElementById('crashCount').value,
-                num_withdrawRate: document.getElementById('num_withdrawRate').value,
-                crashTimingMode: document.getElementById('crashTimingMode').value,
-                visibleAssets: visibleAssets,
-                inputMode: inputMode,
-                activeTab: activeTab,
-                lockedData: lockedData,
-                assets: {}
-            };
-            ASSETS_DEF.forEach(a => {
-                data.assets[a.key] = {
-                    current: document.getElementById(`range_current_${a.key}`)?.value || 0,
-                    future: document.getElementById(`range_future_${a.key}`)?.value || 0
-                };
-            });
-            return data;
-        }
-
-        function applySettingsToUI(data) {
-            if(!data) return;
-            if(data.currentAge) document.getElementById('currentAge').value = data.currentAge;
-            if(data.initialAsset) document.getElementById('initialAsset').value = data.initialAsset;
-            if(data.monthlyAdd) document.getElementById('monthlyAdd').value = data.monthlyAdd;
-            if(data.targetAsset) document.getElementById('targetAsset').value = data.targetAsset;
-            if(data.coastFireMode !== undefined) document.getElementById('coastFireMode').checked = data.coastFireMode;
-            if(data.withdrawAge) document.getElementById('withdrawAge').value = data.withdrawAge;
-            if(data.crashCount) document.getElementById('crashCount').value = data.crashCount;
-            if(data.num_withdrawRate) document.getElementById('num_withdrawRate').value = data.num_withdrawRate;
-            if(data.crashTimingMode) document.getElementById('crashTimingMode').value = data.crashTimingMode;
-            
-            if(data.visibleAssets) {
-                visibleAssets = data.visibleAssets;
-                renderUI(); // Re-render UI based on visibility
-            }
-            if(data.lockedData) lockedData = data.lockedData;
-            
-            if(data.assets) {
-                ASSETS_DEF.forEach(a => {
-                    if(data.assets[a.key]) {
-                        const vC = data.assets[a.key].current;
-                        const vF = data.assets[a.key].future;
-                        const elC = document.getElementById(`range_current_${a.key}`);
-                        const elNumC = document.getElementById(`num_current_${a.key}`);
-                        const elF = document.getElementById(`range_future_${a.key}`);
-                        const elNumF = document.getElementById(`num_future_${a.key}`);
-                        if(elC) elC.value = vC;
-                        if(elNumC) elNumC.value = vC;
-                        if(elF) elF.value = vF;
-                        if(elNumF) elNumF.value = vF;
-                    }
-                });
-            }
-            if(data.inputMode) setInputMode(data.inputMode);
-            if(data.activeTab) switchTab(data.activeTab);
-        }
-
-        function saveState() {
-            const data = getSettingsFromUI();
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        }
-
-        function loadState() {
-            try {
-                const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
-                if(s) applySettingsToUI(s);
-            } catch(e) { console.error(e); }
-        }
-
-        function exportSettings() {
-            const data = getSettingsFromUI();
-            const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'fire_sim_data.json';
-            a.click();
-        }
-
-        function importSettings(e) {
-            const r = new FileReader();
-            r.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    applySettingsToUI(data);
-                    calculate(false);
-                    alert('データを読み込みました');
-                } catch(err) {
-                    alert('ファイルの読み込みに失敗しました');
-                }
-            };
-            r.readAsText(e.files[0]);
-        }
-
-        function unlockComparison() {
-            lockedData = null;
-            calculate(false);
-            alert('比較を解除しました');
-        }
-
-        // --- Share Functions ---
-        function getShareText() {
-            const peak = document.getElementById('resPeakAsset').innerText;
-            const end = document.getElementById('resEndAsset').innerText;
-            const age = document.getElementById('currentAge').value;
-            const target = document.getElementById('targetAsset').value;
-            const years = graduationIndex ? `、${Number(age) + graduationIndex}歳でFIRE達成！` : '';
-            
-            return `FIREシミュレーター結果: 資産ピーク${peak}万、100歳時点${end}万${years} 目標${target}万 #FIRESimulator`;
-        }
-
-        function shareToX() {
-            const text = getShareText();
-            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
-        }
-
-        function copyResult() {
-            const text = getShareText();
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => alert('結果をコピーしました'));
-            } else {
-                // Fallback
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                alert('結果をコピーしました');
-            }
-        }
-
-        // --- Basic Functions ---
         function loadConfig() {
             try {
                 const s = JSON.parse(localStorage.getItem(CONFIG_KEY));
@@ -648,7 +537,6 @@
             graduationIndex = null; 
 
             if (init >= target) { rAge = age; graduationIndex = 0; }
-
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -666,18 +554,12 @@
 
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
-                
                 let add = 0;
                 if(age+i < wAge) {
-                    if(!document.getElementById('coastFireMode').checked) {
-                        add = monthly * 12;
-                    } else if (!gAge) {
-                        add = monthly * 12;
-                    }
+                    if(!document.getElementById('coastFireMode').checked) add = monthly * 12;
+                    else if (!gAge) add = monthly * 12;
                 }
-                
                 cP += add;
-
                 if(age+i < wAge) { 
                     cA *= isCr ? crashC : (1+retC); 
                     cAcc = (cAcc + add) * (isCr ? crashF : (1+retF)); 
@@ -692,20 +574,11 @@
                     cA = tot * (cA/(cA+cAcc||1)); 
                     cAcc = tot - cA;
                 }
-
                 const now = cA + cAcc; 
                 peak = Math.max(peak, now); 
-                hAge.push(age+i); 
-                hPrin.push(Math.round(cP/10000)); 
-                hTotal.push(Math.round(now/10000));
-
-                if(now >= target && !rAge) {
-                    rAge = age + i;
-                    graduationIndex = i; 
-                }
-                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) {
-                    gAge = age + i;
-                }
+                hAge.push(age+i); hPrin.push(Math.round(cP/10000)); hTotal.push(Math.round(now/10000));
+                if(now >= target && !rAge) { rAge = age + i; graduationIndex = i; }
+                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) gAge = age + i;
             }
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
@@ -776,7 +649,6 @@
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
-                
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
@@ -821,7 +693,7 @@
                         { label:'比較', data:lockedData || [], borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData }
                     ]
                 },
-                plugins: [targetLinePlugin],
+                // プラグインはグローバル登録済みだが、念のためここには書かない（競合回避）
                 options: { 
                     responsive:true, 
                     maintainAspectRatio:false, 
@@ -857,7 +729,7 @@
                                 wheel: { enabled: true, speed: 0.05 }, 
                                 pinch: { enabled: true }, 
                                 mode: 'x',
-                                drag: { enabled: false } 
+                                drag: { enabled: false } // 四角ズーム無効化、パン操作のみ許可
                             }, 
                             pan: { 
                                 enabled: true, 
@@ -895,18 +767,16 @@
                 const ctxMob = canvasMob.getContext('2d');
                 if(myChartMobile) myChartMobile.destroy();
                 
+                // モバイル用設定コピー
                 const configMob = {
                     type: config.type,
                     data: {
                         labels: config.data.labels,
                         datasets: config.data.datasets.map(d => ({...d}))
                     },
-                    plugins: [targetLinePlugin],
-                    options: JSON.parse(JSON.stringify(config.options))
+                    options: config.options // オプションは参照渡し（関数含む）
                 };
                 
-                configMob.options.plugins.tooltip.callbacks = config.options.plugins.tooltip.callbacks;
-
                 myChartMobile = new Chart(ctxMob, configMob);
             }
         }
@@ -922,6 +792,11 @@
 
         function lockComparison() { if(myChart) { lockedData = [...myChart.data.datasets[1].data]; alert('固定しました'); calculate(false); } }
         function renderAchievement(age) { document.getElementById('achievementMobile').innerHTML = age ? `<div class="bg-yellow-600/80 p-2 rounded text-white font-bold mb-2">🎉 ${age}歳で達成！</div>` : `<div class="bg-slate-800 p-2 rounded text-gray-400 mb-2">未達...</div>`; document.getElementById('achievementDesktop').innerHTML = document.getElementById('achievementMobile').innerHTML; }
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentAge:document.getElementById('currentAge').value })); } 
+        function loadState() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e){} }
+        function exportSettings() { const s=localStorage.getItem(STORAGE_KEY); if(s){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([s],{type:'application/json'})); a.download='fire_sim_data.json'; a.click(); } }
+        function triggerImport() { document.getElementById('importFile').click(); }
+        function importSettings(e) { const r=new FileReader(); r.onload=function(e){localStorage.setItem(STORAGE_KEY,e.target.result); loadState(); calculate(false); alert('データを読み込みました');}; r.readAsText(e.files[0]); }
         function downloadChart() { const a=document.createElement('a'); a.href=document.getElementById('chartCanvas').toDataURL(); a.download='chart.png'; a.click(); }
         function rerollCrash() { memoCrashYears=[]; calculate(false); }
     </script>
