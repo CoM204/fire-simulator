@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.0 - Perfect Control</title>
+    <title>FIRE Simulator v70.1 - Zoom Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -133,7 +133,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.1</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -354,7 +354,7 @@
         const ASSETS_DEF = [
             { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 70, defF: 70 },
             { key: 'bond', name: '📜 債券', desc: '米国債等。株と逆の動き', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
-            { key: 'gold', name: '🥇 金',   desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
+            { key: 'gold', name: '🥇 金',    desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
             { key: 'reit', name: '🏢 不動産', desc: '家賃収入。ミドルリスク', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0 },
             { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50 },
             { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 30, defF: 30 },
@@ -374,9 +374,9 @@
         let graduationIndex = null; 
 
         window.onload = () => {
-            // v1.2.1 の場合は登録不要な場合が多いが、念のため存在チェックして登録
+            // Zoomプラグインの登録
             if (typeof ChartZoom !== 'undefined') {
-                // Chart.register(ChartZoom); 
+                Chart.register(ChartZoom); 
             }
             Chart.register(targetLinePlugin);
             
@@ -738,15 +738,21 @@
                             pan: {
                                 enabled: true,
                                 mode: 'x',
-                                threshold: 0
+                                modifierKey: null,
+                                threshold: 10
                             },
                             zoom: {
-                                enabled: true,
+                                wheel: {
+                                    enabled: true, // ホイールでのズームを有効化
+                                },
+                                pinch: {
+                                    enabled: true // タッチでのズームを有効化
+                                },
                                 mode: 'x',
-                                speed: 0.05
                             },
                             limits: {
-                                x: { min: age - 5, max: age + 100 + 5 }
+                                x: { min: age - 5, max: age + 100 + 5 },
+                                y: { min: 0 }
                             }
                         }
                     }, 
@@ -754,7 +760,7 @@
                         x:{
                             grid:{display:false},
                             ticks:{color:'#64748b'},
-                            min: age,         
+                            min: age,          
                             max: initialMaxAge 
                         }, 
                         y:{
