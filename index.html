@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v63.0 - Data & Pan Fixed</title>
+    <title>FIRE Simulator v65.0 - Zoom & Pan Final Fix</title>
     <!-- Chart.js 本体 (v3.9.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- プラグイン: ズーム機能 (安定版 v1.2.1) -->
+    <!-- プラグイン: ズーム機能 (安定版 v1.2.1 に変更) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
     
@@ -46,20 +46,17 @@
         
         header { padding: 1rem 2rem; flex: 0 0 auto; }
 
-        /* PC用レイアウト */
         @media (min-width: 1024px) {
             .container-grid { 
                 display: grid; 
-                grid-template-columns: 500px 1fr; /* 左500px固定 */
+                grid-template-columns: 500px 1fr; 
                 gap: 40px; 
                 padding: 0 40px 40px 40px; 
                 max-width: 1600px; 
                 margin: 0 auto;
                 align-items: start;
             }
-            .input-column {
-                height: auto;
-            }
+            .input-column { height: auto; }
             .result-column {
                 height: auto;
                 display: flex;
@@ -69,7 +66,6 @@
             }
         }
 
-        /* モバイル用レイアウト */
         @media (max-width: 1023px) {
             .container-grid { display: block; padding: 16px; }
             .input-column { margin-bottom: 40px; }
@@ -78,7 +74,7 @@
             .result-column { display: none; } 
         }
 
-        /* チャートエリア設定 */
+        /* グラフエリアの設定（カーソルをgrabに変更） */
         .main-chart-container { 
             position: relative; 
             width: 100%; 
@@ -88,7 +84,7 @@
             cursor: grab; /* 掴めるアイコン */
         }
         .main-chart-container:active {
-            cursor: grabbing; /* 掴んだアイコン */
+            cursor: grabbing; /* 掴んでいるアイコン */
         }
 
         .sub-charts-container { 
@@ -139,7 +135,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v63.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v65.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -174,7 +170,8 @@
                 <div class="flex items-center mb-3"><div class="w-1 h-4 bg-blue-500 rounded-full mr-2"></div><h2 class="text-xs font-bold text-blue-300">PROFILE</h2></div>
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div><label class="text-[10px] text-gray-400 block mb-1">現在の年齢</label><input type="number" id="currentAge" value="35" class="glass-input"></div>
-                    <div><label class="text-[10px] text-gray-400 block mb-1">現在資産 (万)</label><input type="number" id="initialAsset" value="1000" class="glass-input"></div>
+                    <!-- 初期値を500万に変更 -->
+                    <div><label class="text-[10px] text-gray-400 block mb-1">現在資産 (万)</label><input type="number" id="initialAsset" value="500" class="glass-input"></div>
                     <div><label class="text-[10px] text-gray-400 block mb-1">毎月積立 (万)</label><input type="number" id="monthlyAdd" value="10" class="glass-input"></div>
                     <div><label class="text-[10px] text-yellow-500 block mb-1">目標金額 (万)</label><input type="number" id="targetAsset" value="3000" class="glass-input border-yellow-500/30 text-yellow-100"></div>
                 </div>
@@ -277,7 +274,7 @@
                     <button onclick="exportSettings()" class="flex-1 bg-slate-700 text-white text-xs py-2 rounded">保存</button>
                     <label class="flex-1 bg-slate-700 text-white text-xs py-2 rounded text-center cursor-pointer hover:bg-slate-600 transition-colors">
                         読込
-                        <input type="file" id="importFile" class="hidden" onchange="importSettings(this)" onclick="this.value=null">
+                        <input type="file" id="importFile" class="hidden" onchange="importSettings(this)" onclick="this.value = null">
                     </label>
                 </div>
 
@@ -295,7 +292,7 @@
         </div>
 
         <!-- 右カラム：結果・グラフ (PC用) -->
-        <div class="result-column">
+        <div class="result-column pc-only">
             <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
             <div class="flex justify-between items-center px-1">
@@ -353,17 +350,18 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v63';
-        const CONFIG_KEY = 'simulatorConfig_v63';
+        const STORAGE_KEY = 'simulatorState_v65';
+        const CONFIG_KEY = 'simulatorConfig_v65';
         
+        // 初期値を変更: 500万、S&P500 30%、現金 70%
         const ASSETS_DEF = [
-            { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 50, defF: 0 },
+            { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 70, defF: 70 },
             { key: 'bond', name: '📜 債券', desc: '米国債等。株と逆の動き', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
             { key: 'gold', name: '🥇 金',   desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
             { key: 'reit', name: '🏢 不動産', desc: '家賃収入。ミドルリスク', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0 },
-            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50 },
-            { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 0, defF: 30 },
-            { key: 'nasdaq', name: '💻 NASDAQ100', desc: '米国のハイテク中心100社', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 20 },
+            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 0, defF: 0 },
+            { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 30, defF: 30 },
+            { key: 'nasdaq', name: '💻 NASDAQ100', desc: '米国のハイテク中心100社', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 0 },
             { key: 'fang', name: '💎 FANG+', desc: '巨大IT企業10社に集中', color: '#f472b6', ret: 0.17, crash: 0.45, defC: 0, defF: 0 },
             { key: 'cyc', name: '🔥 景気敏感株', desc: '金融/素材。景気で変動大', color: '#ef4444', ret: 0.15, crash: 0.45, defC: 0, defF: 0 },
             { key: 'def', name: '🛡️ ディフェンス株', desc: '生活必需品/ヘルスケア', color: '#84cc16', ret: 0.06, crash: 0.75, defC: 0, defF: 0 },
@@ -379,7 +377,8 @@
         let graduationIndex = null; 
 
         window.onload = () => {
-            // v1.2.1 ではプラグイン登録は不要だが、念のため
+            // v1.2.1 の場合は登録不要な場合が多いが、念のため存在チェックして登録
+            // ただし、Chart.js v3 + zoom v1 の組み合わせでは明示的登録が必要なケースも
             if (typeof ChartZoom !== 'undefined') {
                 // Chart.register(ChartZoom); 
             }
@@ -531,6 +530,7 @@
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             graduationIndex = null; 
 
+            // Check if initially achieved
             if (init >= target) {
                 rAge = age;
                 graduationIndex = 0;
@@ -595,9 +595,11 @@
                 }
             }
 
+            // PC用更新
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
             document.getElementById('resEndAsset').innerText = hTotal[hTotal.length-1].toLocaleString();
             
+            // モバイル用更新
             if(document.getElementById('resPeakAssetMobile')) {
                 document.getElementById('resPeakAssetMobile').innerText = Math.round(peak/10000).toLocaleString();
             }
@@ -615,54 +617,13 @@
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
 
-        function switchTab(t) { 
-            activeTab = t; 
-            const isCurrent = (t === 'current');
-
-            document.getElementById('tabCurrent').className = isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
-            document.getElementById('tabFuture').className = !isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
-            
-            const scC = document.getElementById('containerSlidersCurrent');
-            const scF = document.getElementById('containerSlidersFuture');
-            const icC = document.getElementById('containerInputsCurrent');
-            const icF = document.getElementById('containerInputsFuture');
-
-            if (isCurrent) {
-                scC.classList.remove('hidden'); scF.classList.add('hidden');
-                icC.classList.remove('hidden'); icF.classList.add('hidden');
-            } else {
-                scC.classList.add('hidden'); scF.classList.remove('hidden');
-                icC.classList.add('hidden'); icF.classList.remove('hidden');
-            }
-
-            const label1 = document.getElementById('chartLabelType');
-            const label2 = document.getElementById('riskLabelType');
-            const suffix = isCurrent ? '(今の資産)' : '(積立)';
-            if(label1) label1.innerText = suffix;
-            if(label2) label2.innerText = suffix;
-
-            if(inputMode === 'amount') { 
-                const inpInit = document.getElementById('initialAsset');
-                const inpMonth = document.getElementById('monthlyAdd');
-                if(inpInit) inpInit.disabled = isCurrent;
-                if(inpMonth) inpMonth.disabled = !isCurrent;
-                syncPercentToAmounts(); 
-            } else {
-                const inpInit = document.getElementById('initialAsset');
-                const inpMonth = document.getElementById('monthlyAdd');
-                if(inpInit) inpInit.disabled = false;
-                if(inpMonth) inpMonth.disabled = false;
-            }
-
-            updateTotalBar(); 
-            calculate(true); 
-        }
-
         const targetLinePlugin = {
             id: 'targetLine',
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
+                
+                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
@@ -735,27 +696,36 @@
                                 }
                             }
                         },
-                        // Zoom v1.2.1 の設定（pan, zoomが直下にある）
+                        // Zoom v1.2.1 の設定
                         zoom: { 
-                            enabled: true,
-                            mode: 'x',
-                            speed: 0.1, // ホイール速度
-                            limits: {
-                                x: { min: age - 5, max: age + 100 + 5 } 
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                threshold: 0 // 即座に掴めるように
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1 // スピード調整
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
                             }
                         },
-                        pan: {
-                            enabled: true,
-                            mode: 'x',
-                            threshold: 0 // 即座に掴めるように
+                        scales: {
+                             x: {
+                                 min: age - 5,
+                                 max: initialMaxAge 
+                             }
                         }
                     }, 
                     scales:{
                         x:{
                             grid:{display:false},
-                            ticks:{color:'#64748b'},
-                            min: age,         
-                            max: initialMaxAge 
+                            ticks:{color:'#64748b'}
+                            // min/maxはplugins.zoomで制御されることもあるが、初期表示はoptions.scales.xで指定
                         }, 
                         y:{
                             beginAtZero: true, 
@@ -880,6 +850,9 @@
             }
 
             // 整合性を取るため、モードに応じて再計算
+            // 重要: applySettingsToUI内ではスライダー値(%)と金額が矛盾している可能性がある。
+            // 特に金額モードで保存した場合、amtCurrent/amtFuture が正だが current/future (%) がズレているかも。
+            // 逆に%モードなら、amtCurrent/amtFuture は古いかも。
             if (inputMode === 'amount') {
                 // 金額モードなら、復元した金額からパーセンテージを再計算して整合性を取る
                 syncAmountsToPercent();
