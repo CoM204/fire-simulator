@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.9 - Chart Tabs</title>
+    <title>FIRE Simulator v70.10 - Allocation Change</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -49,7 +49,7 @@
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #60a5fa; margin-top: -6px; border: 2px solid #1e293b; }
         
-        .tab-btn { transition: all 0.3s; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; }
+        .tab-btn { transition: all 0.3s; padding: 8px 4px; border-radius: 8px; font-weight: bold; font-size: 11px; cursor: pointer; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
@@ -147,14 +147,8 @@
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.5); }
 
-        /* Scrollbar hiding for tabs */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Markdown Styles */
         .markdown-body { font-size: 14px; line-height: 1.6; color: #e2e8f0; }
@@ -183,7 +177,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.9</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.10</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -242,6 +236,7 @@
                 <div class="flex gap-2 mb-4">
                     <div id="tabCurrent" onclick="switchTab('current')" class="flex-1 tab-btn tab-active">今の資産</div>
                     <div id="tabFuture" onclick="switchTab('future')" class="flex-1 tab-btn tab-inactive">これからの積立</div>
+                    <div id="tabAfter" onclick="switchTab('after')" class="flex-1 tab-btn tab-inactive">達成後の配分</div>
                 </div>
 
                 <div id="uiPercentMode">
@@ -255,6 +250,7 @@
                     <!-- コンテナ: スライダー -->
                     <div id="containerSlidersCurrent" class="block"><div id="slidersCurrent" class="grid grid-cols-2 gap-3"></div></div>
                     <div id="containerSlidersFuture" class="hidden"><div id="slidersFuture" class="grid grid-cols-2 gap-3"></div></div>
+                    <div id="containerSlidersAfter" class="hidden"><div id="slidersAfter" class="grid grid-cols-2 gap-3"></div></div>
                 </div>
 
                 <div id="uiAmountMode" class="hidden">
@@ -263,6 +259,7 @@
                     <!-- コンテナ: 金額入力 -->
                     <div id="containerInputsCurrent" class="block"><div id="inputsCurrent" class="grid grid-cols-2 gap-3"></div></div>
                     <div id="containerInputsFuture" class="hidden"><div id="inputsFuture" class="grid grid-cols-2 gap-3"></div></div>
+                    <div id="containerInputsAfter" class="hidden"><div id="inputsAfter" class="grid grid-cols-2 gap-3"></div></div>
                     
                     <div class="mt-4 text-center border-t border-slate-700/50 pt-3">
                         <p class="text-[10px] text-gray-400">入力合計</p>
@@ -270,7 +267,7 @@
                     </div>
                 </div>
                 
-                <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-center">
+                <div class="mt-5 pt-4 border-t border-slate-700/50 grid grid-cols-3 gap-2 text-center">
                     <div class="bg-slate-800/40 p-2 rounded-lg">
                         <p class="text-[9px] text-gray-500 font-bold mb-1">現在のPF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-blue-400"><span id="tabRetCurrent">0.0</span>%</span></div>
@@ -280,6 +277,11 @@
                         <p class="text-[9px] text-gray-500 font-bold">積立PF</p>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-green-400"><span id="tabRetFuture">0.0</span>%</span></div>
                         <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskFuture">0.0</span>%</span></div>
+                    </div>
+                    <div class="bg-slate-800/40 p-2 rounded-lg">
+                        <p class="text-[9px] text-gray-500 font-bold">達成後PF</p>
+                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">年利</span><span class="text-sm font-black text-indigo-400"><span id="tabRetAfter">0.0</span>%</span></div>
+                        <div class="flex justify-between px-1"><span class="text-[10px] text-gray-400">リスク</span><span class="text-sm font-black text-red-400"><span id="tabRiskAfter">0.0</span>%</span></div>
                     </div>
                 </div>
             </div>
@@ -431,19 +433,20 @@
         const CONFIG_KEY = 'simulatorConfig_v70';
         
         // 初期値を変更: 500万、S&P500 30%、現金 70%
+        // defA (After Graduation Default) を追加 (デフォルトはfutureと同じにしておく)
         const ASSETS_DEF = [
-            { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 70, defF: 70 },
-            { key: 'bond', name: '📜 債券', desc: '米国債等。株と逆の動き', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0 },
-            { key: 'gold', name: '🥇 金',    desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0 },
-            { key: 'reit', name: '🏢 不動産', desc: '家賃収入。ミドルリスク', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0 },
-            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50 },
-            { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 30, defF: 30 },
-            { key: 'nasdaq', name: '💻 NASDAQ100', desc: '米国のハイテク中心100社', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 0 },
-            { key: 'fang', name: '💎 FANG+', desc: '巨大IT企業10社に集中', color: '#f472b6', ret: 0.17, crash: 0.45, defC: 0, defF: 0 },
-            { key: 'cyc', name: '🔥 景気敏感株', desc: '金融/素材。景気で変動大', color: '#ef4444', ret: 0.15, crash: 0.45, defC: 0, defF: 0 },
-            { key: 'def', name: '🛡️ ディフェンス株', desc: '生活必需品/ヘルスケア', color: '#84cc16', ret: 0.06, crash: 0.75, defC: 0, defF: 0 },
-            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等。超ハイリスク', color: '#8b5cf6', ret: 0.30, crash: 0.30, defC: 0, defF: 0 },
-            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQの2倍の値動き', color: '#ec4899', ret: 0.25, crash: 0.25, defC: 0, defF: 0 }
+            { key: 'cash', name: '💴 現金', desc: '日本円。暴落時のクッション', color: '#64748b', ret: 0.00, crash: 1.00, defC: 70, defF: 70, defA: 70 },
+            { key: 'bond', name: '📜 債券', desc: '米国債等。株と逆の動き', color: '#2dd4bf', ret: 0.03, crash: 0.95, defC: 0, defF: 0, defA: 0 },
+            { key: 'gold', name: '🥇 金',    desc: '有事・インフレに強い', color: '#fbbf24', ret: 0.04, crash: 0.85, defC: 0, defF: 0, defA: 0 },
+            { key: 'reit', name: '🏢 不動産', desc: '家賃収入。ミドルリスク', color: '#a855f7', ret: 0.045, crash: 0.75, defC: 0, defF: 0, defA: 0 },
+            { key: 'orkan', name: '🛡️ オルカン', desc: '全世界分散。王道の投資先', color: '#10b981', ret: 0.05, crash: 0.75, defC: 50, defF: 50, defA: 50 },
+            { key: 'sp500', name: '⚔️ S&P500', desc: '米国主要500社に投資', color: '#3b82f6', ret: 0.10, crash: 0.60, defC: 30, defF: 30, defA: 30 },
+            { key: 'nasdaq', name: '💻 NASDAQ100', desc: '米国のハイテク中心100社', color: '#06b6d4', ret: 0.13, crash: 0.50, defC: 0, defF: 0, defA: 0 },
+            { key: 'fang', name: '💎 FANG+', desc: '巨大IT企業10社に集中', color: '#f472b6', ret: 0.17, crash: 0.45, defC: 0, defF: 0, defA: 0 },
+            { key: 'cyc', name: '🔥 景気敏感株', desc: '金融/素材。景気で変動大', color: '#ef4444', ret: 0.15, crash: 0.45, defC: 0, defF: 0, defA: 0 },
+            { key: 'def', name: '🛡️ ディフェンス株', desc: '生活必需品/ヘルスケア', color: '#84cc16', ret: 0.06, crash: 0.75, defC: 0, defF: 0, defA: 0 },
+            { key: 'cryp', name: '₿ 仮想通貨', desc: 'BTC等。超ハイリスク', color: '#8b5cf6', ret: 0.30, crash: 0.30, defC: 0, defF: 0, defA: 0 },
+            { key: 'lev', name: '🚀 レバナス', desc: 'NASDAQの2倍の値動き', color: '#ec4899', ret: 0.25, crash: 0.25, defC: 0, defF: 0, defA: 0 }
         ];
 
         let activeTab = 'current';
@@ -457,11 +460,9 @@
         let currentAnalysisContext = {};
 
         window.onload = () => {
-            // Zoomプラグインの登録
             if (typeof ChartZoom !== 'undefined') {
                 Chart.register(ChartZoom); 
             }
-            // Chart.register(targetLinePlugin); // グローバル登録はバグの原因になるためコメントアウト
             
             loadConfig();
             renderUI();
@@ -489,12 +490,14 @@
 
         function renderUI() {
             const assets = getActiveAssets();
-            ['current', 'future'].forEach(type => {
+            // Loop for current, future, AND after
+            ['current', 'future', 'after'].forEach(type => {
+                let defaultValKey = type === 'current' ? 'defC' : (type === 'future' ? 'defF' : 'defA');
                 document.getElementById(`sliders${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
                     <div class="bg-slate-800/40 rounded-lg p-2 border border-slate-700/50">
-                        <div class="flex justify-between mb-0.5"><span style="color:${a.color}" class="font-bold text-[10px]">${a.name}</span><input type="number" id="num_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" class="bg-slate-900 border border-slate-600 rounded w-10 text-right text-xs text-white" oninput="syncRange('range_${type}_${a.key}', this.value)"></div>
+                        <div class="flex justify-between mb-0.5"><span style="color:${a.color}" class="font-bold text-[10px]">${a.name}</span><input type="number" id="num_${type}_${a.key}" value="${a[defaultValKey]}" class="bg-slate-900 border border-slate-600 rounded w-10 text-right text-xs text-white" oninput="syncRange('range_${type}_${a.key}', this.value)"></div>
                         <div class="text-[8px] text-gray-500 mb-1">${a.desc}</div>
-                        <input type="range" id="range_${type}_${a.key}" value="${type==='current'?a.defC:a.defF}" min="0" max="100" class="w-full" oninput="syncNum('num_${type}_${a.key}', this.value)">
+                        <input type="range" id="range_${type}_${a.key}" value="${a[defaultValKey]}" min="0" max="100" class="w-full" oninput="syncNum('num_${type}_${a.key}', this.value)">
                     </div>`).join('');
                 document.getElementById(`inputs${type.charAt(0).toUpperCase()+type.slice(1)}`).innerHTML = assets.map(a => `
                     <div class="bg-slate-800/20 p-1.5 rounded">
@@ -528,15 +531,23 @@
             document.getElementById('uiPercentMode').classList.toggle('hidden', !isPct);
             document.getElementById('uiAmountMode').classList.toggle('hidden', isPct);
             if(isPct) { syncAmountsToPercent(); document.getElementById('initialAsset').disabled = false; document.getElementById('monthlyAdd').disabled = false; } 
-            else { syncPercentToAmounts(); if(activeTab === 'current') document.getElementById('initialAsset').disabled = true; if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true; }
+            else { 
+                syncPercentToAmounts(); 
+                if(activeTab === 'current') document.getElementById('initialAsset').disabled = true; 
+                if(activeTab === 'future') document.getElementById('monthlyAdd').disabled = true; 
+                if(activeTab === 'after') { /* after mode amount input logic not strictly bound to a total yet, maybe handled in sync */ }
+            }
         }
 
         function onAmountInput(type) {
             const assets = getActiveAssets();
             let total = 0;
             assets.forEach(a => { const el = document.getElementById(`amt_${type}_${a.key}`); if(el) total += Number(el.value) || 0; });
-            document.getElementById('amountModeTotal').innerText = total.toLocaleString();
-            if(type === 'current') document.getElementById('initialAsset').value = total; else document.getElementById('monthlyAdd').value = total;
+            // Only update main inputs for current/future
+            if(type === 'current') { document.getElementById('amountModeTotal').innerText = total.toLocaleString(); document.getElementById('initialAsset').value = total; }
+            else if (type === 'future') { document.getElementById('amountModeTotal').innerText = total.toLocaleString(); document.getElementById('monthlyAdd').value = total; }
+            else { document.getElementById('amountModeTotal').innerText = '-'; } // After doesn't have a fixed total input
+
             if(total > 0) assets.forEach(a => { const val = Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0; const pct = (val / total) * 100; const rng = document.getElementById(`range_${type}_${a.key}`); const num = document.getElementById(`num_${type}_${a.key}`); if(rng) rng.value = pct; if(num) num.value = pct.toFixed(1); });
             calculate(false);
         }
@@ -545,19 +556,29 @@
             const assets = getActiveAssets();
             const totalC = Number(document.getElementById('initialAsset').value) || 0;
             const totalF = Number(document.getElementById('monthlyAdd').value) || 0;
-            let wC = 0, wF = 0;
-            assets.forEach(a => { wC += Number(document.getElementById(`range_current_${a.key}`).value)||0; wF += Number(document.getElementById(`range_future_${a.key}`).value)||0; });
+            let wC = 0, wF = 0, wA = 0;
+            assets.forEach(a => { 
+                wC += Number(document.getElementById(`range_current_${a.key}`).value)||0; 
+                wF += Number(document.getElementById(`range_future_${a.key}`).value)||0; 
+                wA += Number(document.getElementById(`range_after_${a.key}`).value)||0;
+            });
             assets.forEach(a => {
                 const pC = Number(document.getElementById(`range_current_${a.key}`).value)||0;
                 document.getElementById(`amt_current_${a.key}`).value = Math.round(wC > 0 ? (pC / wC) * totalC : 0);
                 const pF = Number(document.getElementById(`range_future_${a.key}`).value)||0;
                 document.getElementById(`amt_future_${a.key}`).value = Math.round(wF > 0 ? (pF / wF) * totalF : 0);
+                // For 'after', we don't have a fixed base amount, so maybe skip or use target? 
+                // Let's just use 100 as base for display if needed or keep 0
+                const pA = Number(document.getElementById(`range_after_${a.key}`).value)||0;
+                document.getElementById(`amt_after_${a.key}`).value = 0; // Not really used in amount mode for logic
             });
-            document.getElementById('amountModeTotal').innerText = (activeTab === 'current' ? totalC : totalF).toLocaleString();
+            if(activeTab === 'current') document.getElementById('amountModeTotal').innerText = totalC.toLocaleString();
+            else if(activeTab === 'future') document.getElementById('amountModeTotal').innerText = totalF.toLocaleString();
+            else document.getElementById('amountModeTotal').innerText = '-';
         }
 
         function syncAmountsToPercent() {
-            ['current', 'future'].forEach(type => {
+            ['current', 'future', 'after'].forEach(type => {
                 const assets = getActiveAssets();
                 let total = 0;
                 assets.forEach(a => total += Number(document.getElementById(`amt_${type}_${a.key}`).value) || 0);
@@ -581,20 +602,15 @@
             calculate(false); 
         }
 
-        // --- New Function: Render Chart Period Tabs ---
         function renderChartTabs(currentAge, maxAge) {
             const container = document.getElementById('chartTabContainer');
             if (!container) return;
             
-            // "全期間" button
             let html = `<button onclick="updateChartRange(${currentAge}, ${maxAge}, this)" class="chart-period-btn active bg-blue-600 text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">全期間</button>`;
             
-            // 10-year period buttons (e.g. 35-44歳, 45-54歳...)
             for (let i = currentAge; i < maxAge; i += 10) {
                 const end = Math.min(i + 9, maxAge);
-                // Don't create a tab if it's too short (e.g. just 1 year at end) unless it's the only one
                 if (i >= maxAge) break;
-                
                 html += `<button onclick="updateChartRange(${i}, ${end}, this)" class="chart-period-btn bg-slate-800 text-gray-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">${i}-${end}歳</button>`; 
             }
             container.innerHTML = html;
@@ -602,17 +618,11 @@
 
         function updateChartRange(min, max, btnElement) {
             if(!myChart) return;
-            
-            // Reset zoom first to avoid conflicts
             myChart.resetZoom();
-
-            // Update chart scale limits
             myChart.options.scales.x.min = min;
             myChart.options.scales.x.max = max;
-            
             myChart.update();
             
-            // Update button styles
             document.querySelectorAll('.chart-period-btn').forEach(b => {
                 b.classList.remove('bg-blue-600', 'text-white');
                 b.classList.add('bg-slate-800', 'text-gray-400');
@@ -634,74 +644,73 @@
             const wRate = +document.getElementById('num_withdrawRate').value / 100;
             const crashCount = +document.getElementById('crashCount').value;
             
+            // Current PF
             let retC=0, crashC=0, totalC=0, pfDataC=[];
             assets.forEach(a => { const v = +document.getElementById(`range_current_${a.key}`).value||0; totalC += v; if(v>0) pfDataC.push({name:a.name, val:v, color:a.color}); });
             assets.forEach(a => { if(totalC>0){ const w=+document.getElementById(`range_current_${a.key}`).value/totalC; retC+=a.ret*w; crashC+=a.crash*w; }});
+            
+            // Future PF
             let retF=0, crashF=0, totalF=0, pfDataF=[];
             assets.forEach(a => { const v = +document.getElementById(`range_future_${a.key}`).value||0; totalF += v; if(v>0) pfDataF.push({name:a.name, val:v, color:a.color}); });
             assets.forEach(a => { if(totalF>0){ const w=+document.getElementById(`range_future_${a.key}`).value/totalF; retF+=a.ret*w; crashF+=a.crash*w; }});
+
+            // After PF
+            let retA=0, crashA=0, totalA=0, pfDataA=[];
+            assets.forEach(a => { const v = +document.getElementById(`range_after_${a.key}`).value||0; totalA += v; if(v>0) pfDataA.push({name:a.name, val:v, color:a.color}); });
+            assets.forEach(a => { if(totalA>0){ const w=+document.getElementById(`range_after_${a.key}`).value/totalA; retA+=a.ret*w; crashA+=a.crash*w; }});
 
             document.getElementById('tabRetCurrent').innerText = (retC*100).toFixed(1);
             document.getElementById('tabRiskCurrent').innerText = totalC>0 ? (-(1-crashC)*100).toFixed(1) : '0.0';
             document.getElementById('tabRetFuture').innerText = (retF*100).toFixed(1);
             document.getElementById('tabRiskFuture').innerText = totalF>0 ? (-(1-crashF)*100).toFixed(1) : '0.0';
+            document.getElementById('tabRetAfter').innerText = (retA*100).toFixed(1);
+            document.getElementById('tabRiskAfter').innerText = totalA>0 ? (-(1-crashA)*100).toFixed(1) : '0.0';
+
             document.getElementById('specTotalRet').innerText = ((retC+retF)/2*100).toFixed(1);
             document.getElementById('specTotalCrash').innerText = (-(1-(crashC+crashF)/2)*100).toFixed(1);
 
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             graduationIndex = null; 
+            let isAchieved = false;
 
             // Check if initially achieved
             if (init >= target) {
                 rAge = age;
                 graduationIndex = 0;
+                isAchieved = true;
             }
 
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
-                    // 全期間（100歳まで）の配列生成
                     let arr = Array.from({length:100-age},(_,i)=>i+1);
-                    
-                    // --- ユーザー要望対応: 暴落は75歳までに収める ---
-                    // ただし期間が短くなりすぎる場合（現在年齢が高い等）は最低限の期間を確保
                     const crashCapAge = 75;
-                    const minDuration = 15; // 最低でも15年は暴落候補期間として見る
-                    
-                    // 75歳までの年数
+                    const minDuration = 15; 
                     let validYears = crashCapAge - age;
-                    // もし75歳までが15年未満なら、15年に延長（ただし100歳は超えない）
                     if (validYears < minDuration) validYears = minDuration;
                     if (validYears > 100 - age) validYears = 100 - age;
-                    
-                    // 配列をカット
                     arr = arr.slice(0, validYears);
-                    // ---------------------------------------------
 
                     if(document.getElementById('crashTimingMode').value==='random') {
                         arr.sort(()=>Math.random()-0.5);
                     }
                     else if(document.getElementById('crashTimingMode').value==='early') {
-                        // 序盤: 前半1/3
                         const boundary = Math.ceil(arr.length / 3);
                         arr = arr.slice(0, boundary);
-                        arr.sort(()=>Math.random()-0.5); // 範囲内でランダム
+                        arr.sort(()=>Math.random()-0.5); 
                     }
                     else if(document.getElementById('crashTimingMode').value==='middle') {
-                        // 中盤: 真ん中1/3
                         const start = Math.floor(arr.length / 3);
                         const end = Math.floor(arr.length * 2 / 3);
                         arr = arr.slice(start, end);
                         arr.sort(()=>Math.random()-0.5);
                     }
-                    else { // late
-                        // 終盤: 後半1/3 (75歳キャップがあるので、55-75歳くらいになるはず)
+                    else { 
                         const start = Math.floor(arr.length * 2 / 3);
                         arr = arr.slice(start);
                         arr.sort(()=>Math.random()-0.5);
                     }
                     
-                    // 暴落回数分だけ取得
                     memoCrashYears = arr.slice(0, crashCount); 
                     memoCrashKey=key;
                 }
@@ -721,16 +730,27 @@
                 
                 cP += add;
 
+                // Determine rates based on achievement status
+                // If achieved in previous step (or initially), use After rates
+                const useAfterRates = isAchieved;
+                const appliedRetC = useAfterRates ? retA : retC;
+                const appliedCrashC = useAfterRates ? crashA : crashC;
+                const appliedRetF = useAfterRates ? retA : retF;
+                const appliedCrashF = useAfterRates ? crashA : crashF;
+
                 if(age+i < wAge) { 
-                    cA *= isCr ? crashC : (1+retC); 
-                    cAcc = (cAcc + add) * (isCr ? crashF : (1+retF)); 
+                    cA *= isCr ? appliedCrashC : (1+appliedRetC); 
+                    cAcc = (cAcc + add) * (isCr ? appliedCrashF : (1+appliedRetF)); 
                 } else {
                     let tot = cA + cAcc; 
                     let wAmt = tot * wRate;
                     if(tot>0){ let r=wAmt/tot; if(r>1)r=1; cP-=cP*r; }
                     tot = Math.max(0, tot - wAmt);
-                    let blendedRet = (cA*retC + cAcc*retF) / (cA+cAcc||1);
-                    let blendedCrash = (cA*crashC + cAcc*crashF) / (cA+cAcc||1);
+                    
+                    // Blended rates for withdrawal phase (though effectively same if achieved)
+                    let blendedRet = (cA*appliedRetC + cAcc*appliedRetF) / (cA+cAcc||1);
+                    let blendedCrash = (cA*appliedCrashC + cAcc*appliedCrashF) / (cA+cAcc||1);
+                    
                     tot *= isCr ? blendedCrash : (1+blendedRet);
                     cA = tot * (cA/(cA+cAcc||1)); 
                     cAcc = tot - cA;
@@ -745,13 +765,13 @@
                 if(now >= target && !rAge) {
                     rAge = age + i;
                     graduationIndex = i; 
+                    isAchieved = true; // Mark as achieved for NEXT iteration
                 }
                 if(document.getElementById('coastFireMode').checked && now >= target && !gAge) {
                     gAge = age + i;
                 }
             }
 
-            // Save Analysis Context
             currentAnalysisContext = {
                 profile: {
                     age: age,
@@ -784,54 +804,52 @@
                 drawMainChart(hAge, hTotal, hPrin);
             }
 
-            // Call tab rendering here
-            // Only update tabs if they are not already set up or if the range changed dramatically? 
-            // Actually, we should update tabs whenever age changes.
-            // Check if age has changed since last render (simple check).
-            // For now, always re-render is safe.
-            renderChartTabs(age, 100); // Fixed max age to 100 for simplicity
+            renderChartTabs(age, 100); 
 
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
-            else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
+            else if (activeTab === 'future') updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
+            else updateSubCharts((retA*100).toFixed(1), (-(1-crashA)*100).toFixed(1), pfDataA);
         }
 
         function switchTab(t) { 
             activeTab = t; 
-            const isCurrent = (t === 'current');
-
-            document.getElementById('tabCurrent').className = isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
-            document.getElementById('tabFuture').className = !isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            
+            document.getElementById('tabCurrent').className = t==='current' ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            document.getElementById('tabFuture').className = t==='future' ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            document.getElementById('tabAfter').className = t==='after' ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
             
             const scC = document.getElementById('containerSlidersCurrent');
             const scF = document.getElementById('containerSlidersFuture');
+            const scA = document.getElementById('containerSlidersAfter');
             const icC = document.getElementById('containerInputsCurrent');
             const icF = document.getElementById('containerInputsFuture');
+            const icA = document.getElementById('containerInputsAfter');
 
-            if (isCurrent) {
-                scC.classList.remove('hidden'); scF.classList.add('hidden');
-                icC.classList.remove('hidden'); icF.classList.add('hidden');
-            } else {
-                scC.classList.add('hidden'); scF.classList.remove('hidden');
-                icC.classList.add('hidden'); icF.classList.remove('hidden');
-            }
+            scC.classList.add('hidden'); scF.classList.add('hidden'); scA.classList.add('hidden');
+            icC.classList.add('hidden'); icF.classList.add('hidden'); icA.classList.add('hidden');
+
+            if (t === 'current') { scC.classList.remove('hidden'); icC.classList.remove('hidden'); }
+            else if (t === 'future') { scF.classList.remove('hidden'); icF.classList.remove('hidden'); }
+            else { scA.classList.remove('hidden'); icA.classList.remove('hidden'); }
 
             const label1 = document.getElementById('chartLabelType');
             const label2 = document.getElementById('riskLabelType');
-            const suffix = isCurrent ? '(今の資産)' : '(積立)';
+            const suffix = t==='current' ? '(今の資産)' : (t==='future' ? '(積立)' : '(達成後)');
             if(label1) label1.innerText = suffix;
             if(label2) label2.innerText = suffix;
 
             if(inputMode === 'amount') { 
                 const inpInit = document.getElementById('initialAsset');
                 const inpMonth = document.getElementById('monthlyAdd');
-                if(inpInit) inpInit.disabled = isCurrent;
-                if(inpMonth) inpMonth.disabled = !isCurrent;
+                if(t === 'current') { inpInit.disabled = false; inpMonth.disabled = true; }
+                else if (t === 'future') { inpInit.disabled = true; inpMonth.disabled = false; }
+                else { inpInit.disabled = true; inpMonth.disabled = true; }
                 syncPercentToAmounts(); 
             } else {
                 const inpInit = document.getElementById('initialAsset');
                 const inpMonth = document.getElementById('monthlyAdd');
-                if(inpInit) inpInit.disabled = false;
-                if(inpMonth) inpMonth.disabled = false;
+                inpInit.disabled = false;
+                inpMonth.disabled = false;
             }
 
             updateTotalBar(); 
@@ -843,13 +861,9 @@
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
-                
-                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
-
                 const xPos = meta.data[graduationIndex].x;
-                
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 2;
@@ -858,19 +872,15 @@
                 ctx.moveTo(xPos, top);
                 ctx.lineTo(xPos, bottom);
                 ctx.stroke();
-                
                 ctx.fillStyle = '#facc15';
                 ctx.font = 'bold 12px Inter';
                 ctx.textAlign = 'left';
                 const label = `🚩 ${chart.data.labels[graduationIndex]}歳で達成`;
                 const textWidth = ctx.measureText(label).width;
-                
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(xPos + 4, top + 10, textWidth + 10, 20);
-                
                 ctx.fillStyle = '#facc15';
                 ctx.fillText(label, xPos + 9, top + 24);
-                
                 ctx.restore();
             }
         };
@@ -891,8 +901,8 @@
                             backgroundColor:'#94a3b8', 
                             fill:false, 
                             pointRadius:0, 
-                            pointHoverRadius: 8, // ホバー時に点を大きく表示
-                            pointHitRadius: 20,  // マウスの反応範囲を広げる
+                            pointHoverRadius: 8, 
+                            pointHitRadius: 20,  
                             pointHoverBorderColor: '#ffffff',
                             pointHoverBorderWidth: 2,
                             borderWidth:2, 
@@ -905,8 +915,8 @@
                             backgroundColor:'#3b82f6', 
                             fill:false, 
                             pointRadius:0, 
-                            pointHoverRadius: 8, // ホバー時に点を大きく表示
-                            pointHitRadius: 20,  // マウスの反応範囲を広げる
+                            pointHoverRadius: 8, 
+                            pointHitRadius: 20, 
                             pointHoverBorderColor: '#ffffff',
                             pointHoverBorderWidth: 2,
                             borderWidth:2, 
@@ -955,12 +965,11 @@
                                 }
                             }
                         },
-                        // Chart.js Plugin Zoom v1.2.1 Configuration
                         zoom: { 
                             pan: {
                                 enabled: true,
-                                mode: 'x', // X軸（左右）のみに限定して操作性を安定化
-                                threshold: 0, // 即座に反応させる
+                                mode: 'x', 
+                                threshold: 0, 
                             },
                             zoom: {
                                 wheel: {
@@ -970,11 +979,11 @@
                                 pinch: {
                                     enabled: true 
                                 },
-                                mode: 'x', // X軸（時間軸）方向のみズーム（カーソル位置中心に安定）
+                                mode: 'x', 
                             },
                             limits: {
                                 x: { min: age - 5, max: age + 100 + 5 },
-                                y: { min: 0, max: 'original' } // Y軸はデータの範囲に収める
+                                y: { min: 0, max: 'original' } 
                             }
                         }
                     }, 
@@ -1023,18 +1032,6 @@
             }
         }
 
-        // --- Helper: Date Formatter ---
-        function getFormattedDate() {
-            const now = new Date();
-            const y = now.getFullYear();
-            const m = String(now.getMonth() + 1).padStart(2, '0');
-            const d = String(now.getDate()).padStart(2, '0');
-            const h = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-            return `${y}${m}${d}_${h}${min}${s}`;
-        }
-        
         // --- Data Management Fix (Updated) ---
         function getSettingsFromUI() {
             const data = {
@@ -1058,6 +1055,7 @@
                     // スライダー値
                     current: document.getElementById(`range_current_${a.key}`)?.value || 0,
                     future: document.getElementById(`range_future_${a.key}`)?.value || 0,
+                    after: document.getElementById(`range_after_${a.key}`)?.value || 0,
                     // 金額入力値 (追加)
                     amtCurrent: document.getElementById(`amt_current_${a.key}`)?.value || 0,
                     amtFuture: document.getElementById(`amt_future_${a.key}`)?.value || 0
@@ -1095,10 +1093,15 @@
                         const elNumC = document.getElementById(`num_current_${a.key}`);
                         const elF = document.getElementById(`range_future_${a.key}`);
                         const elNumF = document.getElementById(`num_future_${a.key}`);
+                        const elA = document.getElementById(`range_after_${a.key}`);
+                        const elNumA = document.getElementById(`num_after_${a.key}`);
+                        
                         if(elC) elC.value = d.current;
                         if(elNumC) elNumC.value = d.current;
                         if(elF) elF.value = d.future;
                         if(elNumF) elNumF.value = d.future;
+                        if(elA) elA.value = d.after !== undefined ? d.after : d.future; // fallback to future if not present
+                        if(elNumA) elNumA.value = d.after !== undefined ? d.after : d.future;
                         
                         // 金額入力の復元 (存在する場合)
                         const amtC = document.getElementById(`amt_current_${a.key}`);
@@ -1121,15 +1124,14 @@
 
             // 整合性を取るため、モードに応じて再計算
             if (inputMode === 'amount') {
-                // 金額モードなら、復元した金額からパーセンテージを再計算して整合性を取る
                 syncAmountsToPercent();
             } else {
-                // パーセントモードなら、復元したパーセントから金額を再計算
                 syncPercentToAmounts();
             }
         }
         // --- End Data Management Fix ---
 
+        // (Other helper functions remain unchanged)
         function updateSubCharts(retVal, crashVal, pfData) {
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
@@ -1156,7 +1158,7 @@
             const blob = new Blob([JSON.stringify(data)],{type:'application/json'}); 
             const a = document.createElement('a'); 
             a.href = URL.createObjectURL(blob); 
-            a.download = `fire_sim_data_${getFormattedDate()}.json`; // 日時付きファイル名
+            a.download = `fire_sim_data_${getFormattedDate()}.json`; 
             a.click(); 
         }
         function triggerImport() { document.getElementById('importFile').click(); }
@@ -1175,13 +1177,10 @@
         function downloadChart() { 
             const a=document.createElement('a'); 
             a.href=document.getElementById('chartCanvas').toDataURL(); 
-            a.download=`chart_${getFormattedDate()}.png`; // 日時付きファイル名
+            a.download=`chart_${getFormattedDate()}.png`; 
             a.click(); 
         }
         function rerollCrash() { memoCrashYears=[]; calculate(false); }
-
-        // --- GEMINI API INTEGRATION ---
-        
         function openAIModal() {
             document.getElementById('aiModal').style.display = 'flex';
         }
@@ -1278,7 +1277,6 @@
                 document.getElementById('aiContent').innerHTML = '<p class="text-red-400 text-center">通信エラーが発生しました。ネットワーク接続を確認してください。</p>';
             }
         }
-
     </script>
 </body>
 </html>
