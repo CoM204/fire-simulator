@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v65.0 - Zoom & Pan Final Fix</title>
+    <title>FIRE Simulator v66.0 - Smooth Pan & Data Fix</title>
     <!-- Chart.js 本体 (v3.9.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- プラグイン: ズーム機能 (安定版 v1.2.1 に変更) -->
+    <!-- プラグイン: ズーム機能 (安定版 v1.2.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
     
@@ -135,7 +135,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v65.0</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v66.0</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -350,8 +350,8 @@
     <script>
         try { if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels); } catch(e) {}
 
-        const STORAGE_KEY = 'simulatorState_v65';
-        const CONFIG_KEY = 'simulatorConfig_v65';
+        const STORAGE_KEY = 'simulatorState_v66';
+        const CONFIG_KEY = 'simulatorConfig_v66';
         
         // 初期値を変更: 500万、S&P500 30%、現金 70%
         const ASSETS_DEF = [
@@ -378,7 +378,6 @@
 
         window.onload = () => {
             // v1.2.1 の場合は登録不要な場合が多いが、念のため存在チェックして登録
-            // ただし、Chart.js v3 + zoom v1 の組み合わせでは明示的登録が必要なケースも
             if (typeof ChartZoom !== 'undefined') {
                 // Chart.register(ChartZoom); 
             }
@@ -617,13 +616,54 @@
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
 
+        function switchTab(t) { 
+            activeTab = t; 
+            const isCurrent = (t === 'current');
+
+            document.getElementById('tabCurrent').className = isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            document.getElementById('tabFuture').className = !isCurrent ? 'flex-1 tab-btn tab-active' : 'flex-1 tab-btn tab-inactive';
+            
+            const scC = document.getElementById('containerSlidersCurrent');
+            const scF = document.getElementById('containerSlidersFuture');
+            const icC = document.getElementById('containerInputsCurrent');
+            const icF = document.getElementById('containerInputsFuture');
+
+            if (isCurrent) {
+                scC.classList.remove('hidden'); scF.classList.add('hidden');
+                icC.classList.remove('hidden'); icF.classList.add('hidden');
+            } else {
+                scC.classList.add('hidden'); scF.classList.remove('hidden');
+                icC.classList.add('hidden'); icF.classList.remove('hidden');
+            }
+
+            const label1 = document.getElementById('chartLabelType');
+            const label2 = document.getElementById('riskLabelType');
+            const suffix = isCurrent ? '(今の資産)' : '(積立)';
+            if(label1) label1.innerText = suffix;
+            if(label2) label2.innerText = suffix;
+
+            if(inputMode === 'amount') { 
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = isCurrent;
+                if(inpMonth) inpMonth.disabled = !isCurrent;
+                syncPercentToAmounts(); 
+            } else {
+                const inpInit = document.getElementById('initialAsset');
+                const inpMonth = document.getElementById('monthlyAdd');
+                if(inpInit) inpInit.disabled = false;
+                if(inpMonth) inpMonth.disabled = false;
+            }
+
+            updateTotalBar(); 
+            calculate(true); 
+        }
+
         const targetLinePlugin = {
             id: 'targetLine',
             afterDatasetsDraw(chart, args, options) {
                 if (graduationIndex === null) return;
                 const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
-                
-                // データセットのメタデータから描画済みの点の座標を直接取得する
                 const meta = chart.getDatasetMeta(0);
                 if (!meta.data[graduationIndex]) return; 
 
@@ -670,6 +710,10 @@
                 },
                 plugins: [targetLinePlugin],
                 options: { 
+                    // アニメーションを無効化してドラッグを滑らかにする
+                    animation: {
+                        duration: 0
+                    },
                     responsive:true, 
                     maintainAspectRatio:false, 
                     interaction: { mode: 'index', intersect: false },
@@ -696,36 +740,29 @@
                                 }
                             }
                         },
-                        // Zoom v1.2.1 の設定
                         zoom: { 
-                            pan: {
-                                enabled: true,
-                                mode: 'x',
-                                threshold: 0 // 即座に掴めるように
+                            limits: {
+                                x: { min: age, max: age + 100 } 
                             },
-                            zoom: {
-                                wheel: {
-                                    enabled: true,
-                                    speed: 0.1 // スピード調整
-                                },
-                                pinch: {
-                                    enabled: true
-                                },
+                            zoom: { 
+                                wheel: { enabled: true, speed: 0.05 }, 
+                                pinch: { enabled: true }, 
                                 mode: 'x',
-                            }
-                        },
-                        scales: {
-                             x: {
-                                 min: age - 5,
-                                 max: initialMaxAge 
-                             }
+                                drag: { enabled: false } 
+                            }, 
+                            pan: { 
+                                enabled: true, 
+                                mode: 'x', 
+                                threshold: 0 
+                            } 
                         }
                     }, 
                     scales:{
                         x:{
                             grid:{display:false},
-                            ticks:{color:'#64748b'}
-                            // min/maxはplugins.zoomで制御されることもあるが、初期表示はoptions.scales.xで指定
+                            ticks:{color:'#64748b'},
+                            min: age,         
+                            max: initialMaxAge 
                         }, 
                         y:{
                             beginAtZero: true, 
@@ -785,10 +822,8 @@
             };
             ASSETS_DEF.forEach(a => {
                 data.assets[a.key] = {
-                    // スライダー値
                     current: document.getElementById(`range_current_${a.key}`)?.value || 0,
                     future: document.getElementById(`range_future_${a.key}`)?.value || 0,
-                    // 金額入力値 (追加)
                     amtCurrent: document.getElementById(`amt_current_${a.key}`)?.value || 0,
                     amtFuture: document.getElementById(`amt_future_${a.key}`)?.value || 0
                 };
@@ -798,7 +833,6 @@
 
         function applySettingsToUI(data) {
             if(!data) return;
-            // 基本設定の復元
             if(data.currentAge) document.getElementById('currentAge').value = data.currentAge;
             if(data.initialAsset) document.getElementById('initialAsset').value = data.initialAsset;
             if(data.monthlyAdd) document.getElementById('monthlyAdd').value = data.monthlyAdd;
@@ -815,12 +849,10 @@
             }
             if(data.lockedData) lockedData = data.lockedData;
             
-            // アセット情報の復元
             if(data.assets) {
                 ASSETS_DEF.forEach(a => {
                     if(data.assets[a.key]) {
                         const d = data.assets[a.key];
-                        // スライダーと数値入力
                         const elC = document.getElementById(`range_current_${a.key}`);
                         const elNumC = document.getElementById(`num_current_${a.key}`);
                         const elF = document.getElementById(`range_future_${a.key}`);
@@ -830,7 +862,6 @@
                         if(elF) elF.value = d.future;
                         if(elNumF) elNumF.value = d.future;
                         
-                        // 金額入力の復元 (存在する場合)
                         const amtC = document.getElementById(`amt_current_${a.key}`);
                         const amtF = document.getElementById(`amt_future_${a.key}`);
                         if(amtC && d.amtCurrent !== undefined) amtC.value = d.amtCurrent;
@@ -839,7 +870,6 @@
                 });
             }
 
-            // モードとタブの復元
             if(data.inputMode) {
                 inputMode = data.inputMode;
                 setInputMode(inputMode);
@@ -849,19 +879,9 @@
                 switchTab(activeTab);
             }
 
-            // 整合性を取るため、モードに応じて再計算
-            // 重要: applySettingsToUI内ではスライダー値(%)と金額が矛盾している可能性がある。
-            // 特に金額モードで保存した場合、amtCurrent/amtFuture が正だが current/future (%) がズレているかも。
-            // 逆に%モードなら、amtCurrent/amtFuture は古いかも。
-            if (inputMode === 'amount') {
-                // 金額モードなら、復元した金額からパーセンテージを再計算して整合性を取る
-                syncAmountsToPercent();
-            } else {
-                // パーセントモードなら、復元したパーセントから金額を再計算
-                syncPercentToAmounts();
-            }
+            // 読み込み時は再計算（同期）を行わず、保存された値をそのまま使用する
+            // syncPercentToAmounts() や syncAmountsToPercent() をここでは呼ばない
         }
-        // --- End Data Management Fix ---
 
         function updateSubCharts(retVal, crashVal, pfData) {
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
