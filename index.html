@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.7 - Label Bug Fix</title>
+    <title>FIRE Simulator v70.9 - Chart Tabs</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -147,6 +147,15 @@
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.5); }
 
+        /* Scrollbar hiding for tabs */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         /* Markdown Styles */
         .markdown-body { font-size: 14px; line-height: 1.6; color: #e2e8f0; }
         .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; color: #fff; }
@@ -174,7 +183,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.7</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.9</span></h1>
     </header>
 
     <!-- モバイル用トップエリア -->
@@ -348,6 +357,11 @@
                 </div>
             </div>
             
+            <!-- NEW: Tabs container -->
+            <div id="chartTabContainer" class="flex gap-1 overflow-x-auto mb-2 pb-1 whitespace-nowrap scrollbar-hide">
+                <!-- Tabs will be injected here -->
+            </div>
+
             <!-- メインチャート -->
             <div class="glass-card p-2 main-chart-container">
                 <canvas id="chartCanvas"></canvas>
@@ -447,8 +461,7 @@
             if (typeof ChartZoom !== 'undefined') {
                 Chart.register(ChartZoom); 
             }
-            // ★修正ポイント: targetLinePlugin のグローバル登録を削除
-            // Chart.register(targetLinePlugin); 
+            // Chart.register(targetLinePlugin); // グローバル登録はバグの原因になるためコメントアウト
             
             loadConfig();
             renderUI();
@@ -566,6 +579,48 @@
             let c={}; if(t==='defensive')c={cash:20,bond:30,gold:20,orkan:30}; else if(t==='standard')c={orkan:40,sp500:60}; else if(t==='aggressive')c={nasdaq:30,fang:20,cyc:20,cryp:10,lev:20}; 
             getActiveAssets().forEach(a=>{ let v=c[a.key]||0; document.getElementById(`range_${activeTab}_${a.key}`).value=v; document.getElementById(`num_${activeTab}_${a.key}`).value=v; }); 
             calculate(false); 
+        }
+
+        // --- New Function: Render Chart Period Tabs ---
+        function renderChartTabs(currentAge, maxAge) {
+            const container = document.getElementById('chartTabContainer');
+            if (!container) return;
+            
+            // "全期間" button
+            let html = `<button onclick="updateChartRange(${currentAge}, ${maxAge}, this)" class="chart-period-btn active bg-blue-600 text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">全期間</button>`;
+            
+            // 10-year period buttons (e.g. 35-44歳, 45-54歳...)
+            for (let i = currentAge; i < maxAge; i += 10) {
+                const end = Math.min(i + 9, maxAge);
+                // Don't create a tab if it's too short (e.g. just 1 year at end) unless it's the only one
+                if (i >= maxAge) break;
+                
+                html += `<button onclick="updateChartRange(${i}, ${end}, this)" class="chart-period-btn bg-slate-800 text-gray-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">${i}-${end}歳</button>`; 
+            }
+            container.innerHTML = html;
+        }
+
+        function updateChartRange(min, max, btnElement) {
+            if(!myChart) return;
+            
+            // Reset zoom first to avoid conflicts
+            myChart.resetZoom();
+
+            // Update chart scale limits
+            myChart.options.scales.x.min = min;
+            myChart.options.scales.x.max = max;
+            
+            myChart.update();
+            
+            // Update button styles
+            document.querySelectorAll('.chart-period-btn').forEach(b => {
+                b.classList.remove('bg-blue-600', 'text-white');
+                b.classList.add('bg-slate-800', 'text-gray-400');
+            });
+            if(btnElement) {
+                btnElement.classList.remove('bg-slate-800', 'text-gray-400');
+                btnElement.classList.add('bg-blue-600', 'text-white');
+            }
         }
 
         function calculate(skipMainChart = false) {
@@ -729,6 +784,13 @@
                 drawMainChart(hAge, hTotal, hPrin);
             }
 
+            // Call tab rendering here
+            // Only update tabs if they are not already set up or if the range changed dramatically? 
+            // Actually, we should update tabs whenever age changes.
+            // Check if age has changed since last render (simple check).
+            // For now, always re-render is safe.
+            renderChartTabs(age, 100); // Fixed max age to 100 for simplicity
+
             if (activeTab === 'current') updateSubCharts((retC*100).toFixed(1), (-(1-crashC)*100).toFixed(1), pfDataC);
             else updateSubCharts((retF*100).toFixed(1), (-(1-crashF)*100).toFixed(1), pfDataF);
         }
@@ -822,9 +884,45 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label:'元本', data:dPrin, borderColor:'#94a3b8', backgroundColor:'#94a3b8', fill:false, pointRadius:0, borderWidth:2, order:1 },
-                        { label:'資産総額', data:dTotal, borderColor:'#3b82f6', backgroundColor:'#3b82f6', fill:false, pointRadius:0, borderWidth:2, order:0 },
-                        { label:'比較', data:lockedData || [], borderColor:'rgba(255,255,255,0.5)', borderDash:[5,5], pointRadius:0, fill:false, order:2, hidden:!lockedData }
+                        { 
+                            label:'元本', 
+                            data:dPrin, 
+                            borderColor:'#94a3b8', 
+                            backgroundColor:'#94a3b8', 
+                            fill:false, 
+                            pointRadius:0, 
+                            pointHoverRadius: 8, // ホバー時に点を大きく表示
+                            pointHitRadius: 20,  // マウスの反応範囲を広げる
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2,
+                            borderWidth:2, 
+                            order:1 
+                        },
+                        { 
+                            label:'資産総額', 
+                            data:dTotal, 
+                            borderColor:'#3b82f6', 
+                            backgroundColor:'#3b82f6', 
+                            fill:false, 
+                            pointRadius:0, 
+                            pointHoverRadius: 8, // ホバー時に点を大きく表示
+                            pointHitRadius: 20,  // マウスの反応範囲を広げる
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2,
+                            borderWidth:2, 
+                            order:0 
+                        },
+                        { 
+                            label:'比較', 
+                            data:lockedData || [], 
+                            borderColor:'rgba(255,255,255,0.5)', 
+                            borderDash:[5,5], 
+                            pointRadius:0, 
+                            pointHoverRadius: 6,
+                            fill:false, 
+                            order:2, 
+                            hidden:!lockedData 
+                        }
                     ]
                 },
                 plugins: [targetLinePlugin],
@@ -839,6 +937,8 @@
                             mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.95)', 
                             titleColor: '#e2e8f0', bodyColor: '#cbd5e1', 
                             borderColor: 'rgba(148, 163, 184, 0.3)', borderWidth: 1, padding: 10,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
                             callbacks: {
                                 label: function(context) { 
                                     return ' ' + context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '万'; 
@@ -865,7 +965,7 @@
                             zoom: {
                                 wheel: {
                                     enabled: true, 
-                                    speed: 0.1, 
+                                    speed: 0.15, 
                                 },
                                 pinch: {
                                     enabled: true 
