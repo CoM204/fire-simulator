@@ -8,9 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- プラグイン: ズーム機能 (Hammer.js必須 + Zoom v2.0.1) -->
+    <!-- プラグイン: ズーム機能 (安定版 v1.2.1) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -22,10 +22,11 @@
             background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 20%); 
             background-attachment: fixed; 
             margin: 0;
-            /* ページ全体のスクロール設定 */
             min-height: 100vh;
             overflow-y: auto; 
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
@@ -43,7 +44,7 @@
         .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .tab-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; border: 1px solid rgba(255,255,255,0.05); }
         
-        header { padding: 1rem 2rem; }
+        header { padding: 1rem 2rem; flex: 0 0 auto; }
 
         /* PC用レイアウト */
         @media (min-width: 1024px) {
@@ -130,7 +131,6 @@
             .sub-charts-container .glass-card { height: 280px; margin-bottom: 0; }
         }
 
-        /* スクロールバー */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 4px; }
@@ -277,7 +277,7 @@
                     <button onclick="exportSettings()" class="flex-1 bg-slate-700 text-white text-xs py-2 rounded">保存</button>
                     <label class="flex-1 bg-slate-700 text-white text-xs py-2 rounded text-center cursor-pointer hover:bg-slate-600 transition-colors">
                         読込
-                        <input type="file" id="importFile" class="hidden" onchange="importSettings(this)">
+                        <input type="file" id="importFile" class="hidden" onchange="importSettings(this)" onclick="this.value=null">
                     </label>
                 </div>
 
@@ -295,7 +295,7 @@
         </div>
 
         <!-- 右カラム：結果・グラフ (PC用) -->
-        <div class="result-column pc-only">
+        <div class="result-column">
             <div id="achievementDesktop" class="hidden lg:block mb-4"></div>
 
             <div class="flex justify-between items-center px-1">
@@ -379,8 +379,9 @@
         let graduationIndex = null; 
 
         window.onload = () => {
+            // v1.2.1 ではプラグイン登録は不要だが、念のため
             if (typeof ChartZoom !== 'undefined') {
-                Chart.register(ChartZoom);
+                // Chart.register(ChartZoom); 
             }
             Chart.register(targetLinePlugin);
             
@@ -530,7 +531,11 @@
             let hAge=[age], hPrin=[init/10000], hTotal=[init/10000], cA=init, cAcc=0, cP=init, peak=init, gAge=null, rAge=null;
             graduationIndex = null; 
 
-            if (init >= target) { rAge = age; graduationIndex = 0; }
+            if (init >= target) {
+                rAge = age;
+                graduationIndex = 0;
+            }
+
             if(crashCount>0) {
                 const key = `${age}-${crashCount}-${document.getElementById('crashTimingMode').value}`;
                 if(memoCrashKey!==key || !memoCrashYears.length) {
@@ -548,12 +553,18 @@
 
             for(let i=1; i<=100-age; i++){
                 const isCr = memoCrashYears.includes(i);
+                
                 let add = 0;
                 if(age+i < wAge) {
-                    if(!document.getElementById('coastFireMode').checked) add = monthly * 12;
-                    else if (!gAge) add = monthly * 12;
+                    if(!document.getElementById('coastFireMode').checked) {
+                        add = monthly * 12;
+                    } else if (!gAge) {
+                        add = monthly * 12;
+                    }
                 }
+                
                 cP += add;
+
                 if(age+i < wAge) { 
                     cA *= isCr ? crashC : (1+retC); 
                     cAcc = (cAcc + add) * (isCr ? crashF : (1+retF)); 
@@ -568,11 +579,20 @@
                     cA = tot * (cA/(cA+cAcc||1)); 
                     cAcc = tot - cA;
                 }
+
                 const now = cA + cAcc; 
                 peak = Math.max(peak, now); 
-                hAge.push(age+i); hPrin.push(Math.round(cP/10000)); hTotal.push(Math.round(now/10000));
-                if(now >= target && !rAge) { rAge = age + i; graduationIndex = i; }
-                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) gAge = age + i;
+                hAge.push(age+i); 
+                hPrin.push(Math.round(cP/10000)); 
+                hTotal.push(Math.round(now/10000));
+
+                if(now >= target && !rAge) {
+                    rAge = age + i;
+                    graduationIndex = i; 
+                }
+                if(document.getElementById('coastFireMode').checked && now >= target && !gAge) {
+                    gAge = age + i;
+                }
             }
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
@@ -662,10 +682,13 @@
                 ctx.textAlign = 'left';
                 const label = `🚩 ${chart.data.labels[graduationIndex]}歳で達成`;
                 const textWidth = ctx.measureText(label).width;
+                
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(xPos + 4, top + 10, textWidth + 10, 20);
+                
                 ctx.fillStyle = '#facc15';
                 ctx.fillText(label, xPos + 9, top + 24);
+                
                 ctx.restore();
             }
         };
@@ -712,19 +735,19 @@
                                 }
                             }
                         },
+                        // Zoom v1.2.1 の設定（pan, zoomが直下にある）
                         zoom: { 
-                            limits: { x: { min: age - 5, max: age + 100 + 5 } }, // 少し余裕を持たせる
-                            zoom: { 
-                                wheel: { enabled: true, speed: 0.1 }, // ホイールで拡大
-                                pinch: { enabled: true },
-                                mode: 'x',
-                                drag: { enabled: false } // 四角ズーム無効化
-                            }, 
-                            pan: { 
-                                enabled: true, 
-                                mode: 'x', 
-                                threshold: 0 // クリック即反応
-                            } 
+                            enabled: true,
+                            mode: 'x',
+                            speed: 0.1, // ホイール速度
+                            limits: {
+                                x: { min: age - 5, max: age + 100 + 5 } 
+                            }
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                            threshold: 0 // 即座に掴めるように
                         }
                     }, 
                     scales:{
@@ -756,7 +779,6 @@
                 const ctxMob = canvasMob.getContext('2d');
                 if(myChartMobile) myChartMobile.destroy();
                 
-                // モバイル用設定コピー
                 const configMob = {
                     type: config.type,
                     data: {
@@ -767,7 +789,6 @@
                     options: JSON.parse(JSON.stringify(config.options))
                 };
                 
-                // プラグイン関数の再設定（JSON.parseで消えるため）
                 configMob.options.plugins.tooltip.callbacks = config.options.plugins.tooltip.callbacks;
 
                 myChartMobile = new Chart(ctxMob, configMob);
