@@ -75,7 +75,7 @@
                 overflow-y: auto; 
                 display: flex;
                 flex-direction: column;
-                gap: 30px; 
+                gap: 16px; /* グラフ間の余白を縮小 */
                 padding-bottom: 40px; 
                 padding-right: 10px;
             }
@@ -92,7 +92,7 @@
         .main-chart-container { 
             position: relative; 
             width: 100%; 
-            height: 450px; 
+            height: 360px; /* 高さを圧縮 */
             margin: 0;
             cursor: grab; 
             touch-action: none;
@@ -102,8 +102,8 @@
         .sub-charts-container { 
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            height: 320px; 
+            gap: 16px; /* 余白調整 */
+            height: 220px; /* 高さを圧縮 */
             width: 100%;
             margin: 0;
             flex-shrink: 0;
@@ -128,7 +128,7 @@
         .result-summary-card { 
             width: 100%;
             margin: 0;
-            padding: 24px;
+            padding: 16px; /* 余白調整 */
             flex-shrink: 0;
         }
 
@@ -595,12 +595,12 @@
             const container = document.getElementById('chartTabContainer');
             if (!container) return;
             
-            let html = `<button onclick="updateChartRange(${currentAge}, ${maxAge}, this)" class="chart-period-btn active bg-blue-600 text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">全期間</button>`;
+            let html = `<button onclick="updateChartRange(${currentAge}, ${maxAge}, this)" class="chart-period-btn active bg-blue-600 text-white text-[10px] px-3 h-7 flex-shrink-0 flex items-center justify-center rounded transition-colors whitespace-nowrap">全期間</button>`;
             
             for (let i = currentAge; i < maxAge; i += 10) {
                 const end = Math.min(i + 9, maxAge);
                 if (i >= maxAge) break;
-                html += `<button onclick="updateChartRange(${i}, ${end}, this)" class="chart-period-btn bg-slate-800 text-gray-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors whitespace-nowrap">${i}-${end}歳</button>`; 
+                html += `<button onclick="updateChartRange(${i}, ${end}, this)" class="chart-period-btn bg-slate-800 text-gray-400 hover:text-white text-[10px] px-3 h-7 flex-shrink-0 flex items-center justify-center rounded transition-colors whitespace-nowrap">${i}-${end}歳</button>`; 
             }
             container.innerHTML = html;
         }
