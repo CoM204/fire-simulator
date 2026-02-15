@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.21 - Mobile Chart Controls</title>
+    <title>FIRE Simulator v70.22 - Config Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -160,7 +160,7 @@
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.21</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.22</span></h1>
     </header>
 
     <!-- モバイル用トップエリア：サマリーのみ -->
@@ -513,10 +513,57 @@
 
         function openConfigModal() { document.getElementById('configModal').style.display = 'flex'; }
         function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; }
+        
         function saveConfig() {
+            // 1. UI再構築前に、現在表示されている項目の値だけを退避する
+            // (非表示の項目はDOMがないので保存されない -> 再表示時は初期値になる)
+            const savedStates = {};
+            ASSETS_DEF.forEach(a => {
+                // DOMが存在するか確認
+                if (document.getElementById(`range_current_${a.key}`)) {
+                    savedStates[a.key] = {
+                        current: document.getElementById(`range_current_${a.key}`).value,
+                        future: document.getElementById(`range_future_${a.key}`).value,
+                        after: document.getElementById(`range_after_${a.key}`).value,
+                        amtCurrent: document.getElementById(`amt_current_${a.key}`)?.value || 0,
+                        amtFuture: document.getElementById(`amt_future_${a.key}`)?.value || 0
+                    };
+                }
+            });
+
+            // 2. 設定を保存
             ASSETS_DEF.forEach(a => visibleAssets[a.key] = document.getElementById(`cfg_${a.key}`).checked);
             localStorage.setItem(CONFIG_KEY, JSON.stringify(visibleAssets));
-            renderUI(); closeConfigModal(); setInputMode(inputMode); calculate(false);
+
+            // 3. UI再描画 (ここでDOMが再生成され、すべて初期値に戻る)
+            renderUI();
+
+            // 4. 退避した値を復元する
+            ASSETS_DEF.forEach(a => {
+                if (savedStates[a.key]) {
+                    // 直前まで表示されていた項目: 退避した値を戻す
+                    const d = savedStates[a.key];
+                    const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+                    
+                    setVal(`range_current_${a.key}`, d.current);
+                    setVal(`num_current_${a.key}`, d.current);
+                    setVal(`range_future_${a.key}`, d.future);
+                    setVal(`num_future_${a.key}`, d.future);
+                    setVal(`range_after_${a.key}`, d.after);
+                    setVal(`num_after_${a.key}`, d.after);
+                    
+                    setVal(`amt_current_${a.key}`, d.amtCurrent);
+                    setVal(`amt_future_${a.key}`, d.amtFuture);
+                }
+                // 直前まで非表示だった項目 (今回チェックを入れた項目):
+                // savedStates にはないので、ここは何もしない。
+                // 結果として、renderUI() で設定された初期値 (ASSETS_DEFのdefCなど) が使われる。
+                // これにより「0%」ではなく「適切な初期値」で復活する。
+            });
+
+            closeConfigModal();
+            setInputMode(inputMode);
+            calculate(false);
         }
 
         function resetChartZoom() { 
@@ -1042,7 +1089,7 @@
                         x:{
                             grid:{display:false},
                             ticks:{color:'#64748b'},
-                            min: age,            
+                            min: age,             
                             max: initialMaxAge 
                         }, 
                         y:{
