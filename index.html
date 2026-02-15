@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIRE Simulator v70.15 - Image Download Fix 4</title>
+    <title>FIRE Simulator v70.17 - Prompt & Mobile Fix</title>
     <!-- Chart.js 本体 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- プラグイン: データラベル -->
@@ -11,8 +11,6 @@
     <!-- プラグイン: ズーム機能 (安定版 v1.2.1 + Hammer.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
-    <!-- Markdown Parser (marked) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -43,7 +41,6 @@
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
         .config-modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
-        .ai-modal-content { background: #1e293b; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 24px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 50px rgba(139, 92, 246, 0.2); }
         
         input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; height: 20px; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.2); }
@@ -87,7 +84,7 @@
         @media (max-width: 1023px) {
             .container-grid { display: block; padding: 16px; height: auto; }
             .input-column { margin-bottom: 40px; height: auto; overflow-y: visible; }
-            .mobile-chart-only { display: block; margin-bottom: 30px; }
+            .mobile-only-block { display: block; margin-bottom: 30px; }
             .pc-only { display: none !important; }
             .result-column { display: none; } 
         }
@@ -135,9 +132,9 @@
             flex-shrink: 0;
         }
 
-        .mobile-chart-only { display: none; }
+        .mobile-only-block { display: none; }
         @media (max-width: 1023px) {
-            .mobile-chart-only { display: block; }
+            .mobile-only-block { display: block; }
             .sub-charts-container { grid-template-columns: 1fr; height: auto; }
             .sub-charts-container .glass-card { height: 280px; margin-bottom: 0; }
         }
@@ -150,41 +147,16 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Markdown Styles */
-        .markdown-body { font-size: 14px; line-height: 1.6; color: #e2e8f0; }
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; color: #fff; }
-        .markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid #4b5563; padding-bottom: 0.3em; }
-        .markdown-body h2 { font-size: 1.3em; }
-        .markdown-body h3 { font-size: 1.1em; }
-        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 1em; }
-        .markdown-body li { margin-bottom: 0.5em; }
-        .markdown-body strong { color: #60a5fa; font-weight: 700; }
-        .markdown-body em { font-style: italic; color: #f472b6; }
-        .markdown-body blockquote { border-left: 4px solid #6b7280; padding-left: 1em; color: #9ca3af; margin: 1em 0; }
-        
-        .loading-dots:after {
-            content: '.';
-            animation: dots 1.5s steps(5, end) infinite;
-        }
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60% { content: '...'; }
-            80%, 100% { content: ''; }
-        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.15</span></h1>
+        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">FIRE Simulator <span class="text-xs text-gray-500 ml-1">v70.17</span></h1>
     </header>
 
-    <!-- モバイル用トップエリア -->
-    <div class="lg:hidden p-4 mobile-chart-only">
-        <div class="glass-card p-2 h-[280px] relative mb-4">
-            <canvas id="chartCanvasMobile"></canvas>
-        </div>
+    <!-- モバイル用トップエリア：サマリーのみ -->
+    <div class="lg:hidden p-4 pb-0 mobile-only-block">
         <div class="glass-card p-4">
             <div class="grid grid-cols-2 gap-4 text-center">
                 <div>
@@ -286,6 +258,14 @@
                 </div>
             </div>
 
+            <!-- モバイル用：グラフをここに移動 -->
+            <div class="lg:hidden mobile-only-block mb-5">
+                <div class="glass-card p-2 h-[280px] relative">
+                    <canvas id="chartCanvasMobile"></canvas>
+                </div>
+                <p class="text-[10px] text-gray-500 text-center mt-2">※ ピンチイン/アウトで拡大縮小可能</p>
+            </div>
+
             <div class="mb-5 glass-card p-4">
                 <p class="text-[10px] text-gray-400 mb-2 text-center font-bold">ASSET SPEC (10 YEARS)</p>
                 <div class="flex justify-center gap-8 text-center">
@@ -327,10 +307,10 @@
                     </label>
                 </div>
 
-                <!-- ✨ AI Coach Button -->
+                <!-- 🤖 AI Prompt Button -->
                 <div class="mb-4">
-                    <button onclick="getAIAdvice()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]">
-                        <span>✨</span> AIコーチングを受ける
+                    <button onclick="openPromptModal()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]">
+                        <span>📋</span> 外部AI相談用のテキストを作成
                     </button>
                 </div>
 
@@ -408,21 +388,18 @@
         </div>
     </div>
 
-    <!-- AI ADVICE MODAL -->
-    <div id="aiModal" class="modal-overlay">
-        <div class="ai-modal-content relative">
-            <button onclick="closeAIModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
-            <div class="flex items-center gap-3 mb-6">
-                <div class="bg-gradient-to-br from-violet-500 to-fuchsia-500 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg">✨</div>
-                <div>
-                    <h3 class="text-xl font-black text-white">AI Coach</h3>
-                    <p class="text-xs text-violet-300">Powered by Gemini 2.0 Flash</p>
-                </div>
+    <!-- PROMPT MODAL -->
+    <div id="promptModal" class="modal-overlay">
+        <div class="config-modal-content max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">AI相談用プロンプト</h3>
+                <button onclick="closePromptModal()" class="text-gray-400 hover:text-white">✕</button>
             </div>
-            
-            <div id="aiContent" class="markdown-body min-h-[150px]">
-                <p class="text-gray-400 text-center mt-10 loading-dots">シミュレーション結果を分析中...</p>
-            </div>
+            <p class="text-xs text-gray-400 mb-2">以下のテキストをコピーして、ChatGPTやGeminiなどに貼り付けて相談してみましょう。</p>
+            <textarea id="promptTextarea" class="w-full h-64 bg-slate-900 border border-slate-700 rounded p-3 text-xs text-gray-300 mb-4 focus:outline-none focus:border-blue-500" readonly></textarea>
+            <button onclick="copyPromptText()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition-colors flex items-center justify-center gap-2">
+                <span id="copyBtnLabel">コピーする</span>
+            </button>
         </div>
     </div>
 
@@ -797,7 +774,12 @@
                     graduationAge: rAge,
                     isSuccess: !!rAge
                 },
-                portfolio: pfDataF.map(p => `${p.name}: ${Math.round(p.val)}%`).join(', ')
+                portfolio: pfDataF.map(p => `${p.name}: ${Math.round(p.val)}%`).join(', '),
+                pfMetrics: {
+                    c: { r: (retC*100).toFixed(1), k: (-(1-crashC)*100).toFixed(1) },
+                    f: { r: (retF*100).toFixed(1), k: (-(1-crashF)*100).toFixed(1) },
+                    a: { r: (retA*100).toFixed(1), k: (-(1-crashA)*100).toFixed(1) }
+                }
             };
 
             document.getElementById('resPeakAsset').innerText = Math.round(peak/10000).toLocaleString();
@@ -1003,7 +985,7 @@
                         x:{
                             grid:{display:false},
                             ticks:{color:'#64748b'},
-                            min: age,           
+                            min: age,            
                             max: initialMaxAge 
                         }, 
                         y:{
@@ -1044,7 +1026,6 @@
             }
         }
 
-        // --- Data Management Fix (Updated) ---
         function getSettingsFromUI() {
             const data = {
                 currentAge: document.getElementById('currentAge').value,
@@ -1064,11 +1045,9 @@
             };
             ASSETS_DEF.forEach(a => {
                 data.assets[a.key] = {
-                    // スライダー値
                     current: document.getElementById(`range_current_${a.key}`)?.value || 0,
                     future: document.getElementById(`range_future_${a.key}`)?.value || 0,
                     after: document.getElementById(`range_after_${a.key}`)?.value || 0,
-                    // 金額入力値 (追加)
                     amtCurrent: document.getElementById(`amt_current_${a.key}`)?.value || 0,
                     amtFuture: document.getElementById(`amt_future_${a.key}`)?.value || 0
                 };
@@ -1078,7 +1057,6 @@
 
         function applySettingsToUI(data) {
             if(!data) return;
-            // 基本設定の復元
             if(data.currentAge) document.getElementById('currentAge').value = data.currentAge;
             if(data.initialAsset) document.getElementById('initialAsset').value = data.initialAsset;
             if(data.monthlyAdd) document.getElementById('monthlyAdd').value = data.monthlyAdd;
@@ -1095,12 +1073,10 @@
             }
             if(data.lockedData) lockedData = data.lockedData;
             
-            // アセット情報の復元
             if(data.assets) {
                 ASSETS_DEF.forEach(a => {
                     if(data.assets[a.key]) {
                         const d = data.assets[a.key];
-                        // スライダーと数値入力
                         const elC = document.getElementById(`range_current_${a.key}`);
                         const elNumC = document.getElementById(`num_current_${a.key}`);
                         const elF = document.getElementById(`range_future_${a.key}`);
@@ -1112,10 +1088,9 @@
                         if(elNumC) elNumC.value = d.current;
                         if(elF) elF.value = d.future;
                         if(elNumF) elNumF.value = d.future;
-                        if(elA) elA.value = d.after !== undefined ? d.after : d.future; // fallback to future if not present
+                        if(elA) elA.value = d.after !== undefined ? d.after : d.future; 
                         if(elNumA) elNumA.value = d.after !== undefined ? d.after : d.future;
                         
-                        // 金額入力の復元 (存在する場合)
                         const amtC = document.getElementById(`amt_current_${a.key}`);
                         const amtF = document.getElementById(`amt_future_${a.key}`);
                         if(amtC && d.amtCurrent !== undefined) amtC.value = d.amtCurrent;
@@ -1124,7 +1099,6 @@
                 });
             }
 
-            // モードとタブの復元
             if(data.inputMode) {
                 inputMode = data.inputMode;
                 setInputMode(inputMode);
@@ -1134,16 +1108,13 @@
                 switchTab(activeTab);
             }
 
-            // 整合性を取るため、モードに応じて再計算
             if (inputMode === 'amount') {
                 syncAmountsToPercent();
             } else {
                 syncPercentToAmounts();
             }
         }
-        // --- End Data Management Fix ---
 
-        // (Other helper functions remain unchanged)
         function updateSubCharts(retVal, crashVal, pfData) {
             const ctxPf = document.getElementById('portfolioChart').getContext('2d');
             const ctxRr = document.getElementById('riskReturnChart').getContext('2d');
@@ -1213,11 +1184,9 @@
             const end = document.getElementById('resEndAsset').innerText;
             const text = `資産ピーク: ${peak}万円\n100歳時点: ${end}万円`;
             
-            // クリップボードAPIが使える場合
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(err => alert('コピー失敗'));
             } else {
-                // フォールバック（古いブラウザやiframe制限環境用）
                 const ta = document.createElement('textarea');
                 ta.value = text;
                 document.body.appendChild(ta);
@@ -1240,27 +1209,21 @@
             }
 
             try {
-                // 背景色付きで保存するための処理
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = canvas.width;
                 tempCanvas.height = canvas.height;
                 const ctx = tempCanvas.getContext('2d');
                 
-                // 背景色を塗る (bodyの背景色に合わせる)
                 ctx.fillStyle = '#0b0f19'; 
                 ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // 元のチャートを重ねる
                 ctx.drawImage(canvas, 0, 0);
 
-                // データURLを取得
                 const url = tempCanvas.toDataURL('image/png');
                 
-                // ダウンロードリンク作成
                 const a = document.createElement('a'); 
                 a.href = url;
                 a.download = `chart_${getFormattedDate()}.png`; 
-                document.body.appendChild(a); // Firefox対策
+                document.body.appendChild(a); 
                 a.click(); 
                 document.body.removeChild(a);
             } catch (e) {
@@ -1269,128 +1232,66 @@
             }
         }
         function rerollCrash() { memoCrashYears=[]; calculate(false); }
-        function openAIModal() {
-            document.getElementById('aiModal').style.display = 'flex';
-        }
-        function closeAIModal() {
-            document.getElementById('aiModal').style.display = 'none';
-        }
 
-        async function getAIAdvice() {
-            openAIModal();
-            document.getElementById('aiContent').innerHTML = '<p class="text-gray-400 text-center mt-10 loading-dots">最強のFIREプランを生成中...</p>';
-
+        // --- New Prompt Generation Logic ---
+        function openPromptModal() {
             const ctx = currentAnalysisContext;
-            
-            // Construct prompt
-            let statusText = ctx.result.isSuccess ? 
-                `${ctx.result.graduationAge}歳でFIRE達成可能です。` : 
-                "目標金額には届かない見込みです。";
+            if(!ctx || !ctx.profile) { alert('計算結果がありません'); return; }
 
-            const prompt = `
-あなたはプロフェッショナルなファイナンシャルプランナーです。以下のユーザーのFIREシミュレーション結果をもとに、具体的で少し辛口かつユーモアのあるアドバイスを行ってください。
+            const statusText = ctx.result.isSuccess ? 
+                `${ctx.result.graduationAge}歳でFIRE達成可能です。` : 
+                "現時点では目標金額に届かない見込みです。";
+
+            const timingText = document.getElementById('crashTimingMode').options[document.getElementById('crashTimingMode').selectedIndex].text;
+
+            const pfMetrics = `【ポートフォリオ指標】
+- 現在PF: 年利${ctx.pfMetrics.c.r}% / リスク${ctx.pfMetrics.c.k}%
+- 積立PF: 年利${ctx.pfMetrics.f.r}% / リスク${ctx.pfMetrics.f.k}%
+- 達成後PF: 年利${ctx.pfMetrics.a.r}% / リスク${ctx.pfMetrics.a.k}%`;
+
+            const prompt = `以下のFIREシミュレーション結果をもとに、ファイナンシャルプランナーとしてアドバイスをください。
+特にリスク管理、ポートフォリオの改善点、目標達成に向けた具体的なアクションプランについて教えてください。
 
 【ユーザー情報】
 - 年齢: ${ctx.profile.age}歳
 - 現在資産: ${ctx.profile.initialAsset}万円
 - 毎月積立: ${ctx.profile.monthlyAdd}万円
 - 目標金額: ${ctx.profile.targetAsset}万円
-- 積立ポートフォリオ: ${ctx.portfolio}
+- 暴落設定: ${document.getElementById('crashCount').value}回 (${timingText})
+
+【ポートフォリオ配分（積立期）】
+${ctx.portfolio}
+
+${pfMetrics}
 
 【シミュレーション結果】
-- 結果: ${statusText}
+- 判定: ${statusText}
 - 資産ピーク: ${ctx.result.peak}万円
 - 100歳時点: ${ctx.result.end}万円
 
-【指示】
-以下の構成でアドバイスを出力してください。Markdown形式でお願いします。
-1. **現状分析**: プランの実現可能性と、ポートフォリオのリスク分析（特に暴落耐性について）。
-2. **リスク警告**: もし暴落が起きた場合にどうなるか、甘い見通しがあれば指摘してください。
-3. **具体的な改善案**: 達成確率を上げるための具体的なアクションプラン（積立額の変更、ポートフォリオの見直し、副業の推奨など）。
-4. **最後の一言**: 背中を押すような、あるいは気を引き締めるような一言。
-`;
+【相談したいこと】
+このプランの実現可能性はどの程度でしょうか？
+また、より安全に、あるいはより早く目標を達成するための改善案はありますか？`;
 
-            const apiKey = ""; // API Key will be injected by the environment
-
-            // Allow manual override if env key is missing or failed
-            let currentKey = apiKey;
-            if (!currentKey) {
-                currentKey = localStorage.getItem('gemini_manual_key') || "";
-            }
-
-            try {
-                // Retry logic helper
-                const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
-                    try {
-                        const response = await fetch(url, options);
-                        
-                        // Handle 403 specifically
-                        if (response.status === 403) {
-                            const newKey = prompt("API接続エラー(403): キーが無効または未設定です。\nGoogle Gemini APIキーを入力してください:");
-                            if (newKey) {
-                                localStorage.setItem('gemini_manual_key', newKey);
-                                // Retry with new key
-                                const newUrl = url.replace(/key=([^&]*)/, `key=${newKey}`);
-                                return fetch(newUrl, options);
-                            }
-                        }
-
-                        if (!response.ok) {
-                            let errorMsg = `HTTP Error: ${response.status}`;
-                            try {
-                                const errorData = await response.json();
-                                if (errorData.error && errorData.error.message) {
-                                    errorMsg += ` - ${errorData.error.message}`;
-                                }
-                            } catch (e) { /* ignore json parse error */ }
-                            
-                            if (retries > 0 && response.status !== 400 && response.status !== 403) {
-                                await new Promise(r => setTimeout(r, backoff));
-                                return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                            }
-                            throw new Error(errorMsg);
-                        }
-                        return response;
-                    } catch (error) {
-                        if (retries > 0) {
-                            await new Promise(r => setTimeout(r, backoff));
-                            return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                        }
-                        throw error;
-                    }
-                };
-
-                const response = await fetchWithRetry(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: prompt
-                                }]
-                            }]
-                        })
-                    }
-                );
-
-                const data = await response.json();
-                
-                if (data.candidates && data.candidates[0].content) {
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    document.getElementById('aiContent').innerHTML = marked.parse(aiText);
-                } else {
-                    document.getElementById('aiContent').innerHTML = '<p class="text-red-400 text-center">アドバイスの生成に失敗しました。もう一度お試しください。</p>';
-                }
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                document.getElementById('aiContent').innerHTML = `<p class="text-red-400 text-center">エラーが発生しました。<br><span class="text-xs text-red-500">${error.message}</span></p>`;
-            }
+            document.getElementById('promptTextarea').value = prompt;
+            document.getElementById('promptModal').style.display = 'flex';
         }
+
+        function closePromptModal() {
+            document.getElementById('promptModal').style.display = 'none';
+            document.getElementById('copyBtnLabel').innerText = 'コピーする';
+        }
+
+        function copyPromptText() {
+            const ta = document.getElementById('promptTextarea');
+            ta.select();
+            document.execCommand('copy');
+            document.getElementById('copyBtnLabel').innerText = 'コピーしました！';
+            setTimeout(() => {
+                document.getElementById('copyBtnLabel').innerText = 'コピーする';
+            }, 2000);
+        }
+
     </script>
 </body>
 </html>
